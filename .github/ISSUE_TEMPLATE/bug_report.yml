@@ -1,0 +1,18 @@
+name: Bug report
+description: Report a reproducible problem with EarControl.
+body:
+  - type: textarea
+    attributes:
+      label: What happened?
+      description: Include the steps, expected result, and actual result.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: App and Windows versions
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Headphones and Monitor result
+      description: For input issues, include the device model, the gesture, and what Activity shows. Remove personal window titles and text.
