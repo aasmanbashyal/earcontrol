@@ -1,0 +1,10 @@
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.zip binary
+*.exe binary
+*.mp4 binary
+*.mp3 binary
+*.ogg binary
+# Preserve the vendored runtime, including its original license header.
+media/launch/composition/assets/runtime/gsap.min.js -whitespace
