@@ -2,20 +2,20 @@
 
 Map headphone media commands to Windows shortcuts and macros.
 
-[![EarControl product demo](docs/media/demo-poster.jpg)](docs/media/earcontrol-demo.mp4)
+https://github.com/user-attachments/assets/53dbceda-f306-42fe-b55f-9e94693331cb
 
-[Watch the 20-second demo](docs/media/earcontrol-demo.mp4) · [User guide](docs/user-guide.md) · [Development](CONTRIBUTING.md) · [Support](SUPPORT.md)
+[Download the 20-second demo](https://github.com/aasmanbashyal/aircontrol/raw/refs/heads/main/docs/media/earcontrol-demo.mp4) · [User guide](docs/user-guide.md) · [Development](CONTRIBUTING.md) · [Support](SUPPORT.md)
 
 EarControl lets a supported headphone command advance a slide, run a shortcut, or execute an ordered macro. Use Monitor to see what Windows receives, choose a profile and target window, then start control.
 
 ## Get started
 
-Version **2.1.2** is available as local builds in `dist/`:
+Version **2.1.2** has Windows installer and portable builds. Published downloads appear on the [Releases page](https://github.com/aasmanbashyal/aircontrol/releases). Before publication, signed-in GitHub users can open a successful [Windows build](https://github.com/aasmanbashyal/aircontrol/actions/workflows/windows.yml) and download its `EarControl-windows-x64` artifact.
 
 - **Installer:** `EarControl_2.1.2_x64-setup.exe`, for a per-user installation.
 - **Portable:** extract `EarControl-2.1.2-win-x64.zip` and open `EarControl.exe`.
 
-Windows 10/11 x64 and Microsoft Edge WebView2 Runtime are required. The installer checks the runtime. No Rust or .NET installation is needed to run the app. These binaries are unsigned. Release files are generated locally and are excluded from Git; a hosted download link will be added when the repository is published.
+Windows 10/11 x64 and Microsoft Edge WebView2 Runtime are required. The installer checks the runtime. No Rust or .NET installation is needed to run the app. These binaries are unsigned. Downloads include a SHA-256 checksum manifest. Release binaries stay outside Git.
 
 1. Pair headphones with the PC in Windows Bluetooth settings.
 2. Open **Monitor** and try each gesture. Activity shows the command received.
