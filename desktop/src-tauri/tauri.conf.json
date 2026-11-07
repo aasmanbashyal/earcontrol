@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "EarControl",
+  "version": "2.1.2",
+  "identifier": "app.earcontrol.desktop",
+  "build": {
+    "beforeDevCommand": "bun run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "bun run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [{
+      "label": "main",
+      "title": "EarControl",
+      "width": 1160,
+      "height": 780,
+      "minWidth": 860,
+      "minHeight": 620,
+      "center": true,
+      "decorations": false,
+      "backgroundColor": "#FFFFFF"
+    }],
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'; object-src 'none'; frame-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "resources": {"../../LICENSE": "LICENSE"},
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
+    "shortDescription": "Headphone shortcuts and macros",
+    "category": "Utility",
+    "windows": {"nsis": {"installMode": "currentUser"}}
+  }
+}
