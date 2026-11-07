@@ -1,0 +1,2 @@
+EarControl maps Windows headphone media commands to shortcuts and macros, with a practice deck to try the setup. An illustrated walkthrough of the desktop app.
+Music: Sascha Ende, ende.app (CC BY 4.0).
