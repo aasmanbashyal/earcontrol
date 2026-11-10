@@ -4,7 +4,7 @@ The finished film is a 20.5-second, 1920×1080 illustrated walkthrough with musi
 
 https://github.com/user-attachments/assets/53dbceda-f306-42fe-b55f-9e94693331cb
 
-[Download the MP4](https://github.com/aasmanbashyal/aircontrol/raw/refs/heads/main/docs/media/earcontrol-demo.mp4). GitHub's player uses an uploaded attachment; the original MP4 remains in `docs/media/earcontrol-demo.mp4`. After rendering a replacement, upload it as a GitHub video attachment and update the standalone player URL here and in the root README.
+[Download the MP4](https://github.com/aasmanbashyal/earcontrol/raw/refs/heads/main/docs/media/earcontrol-demo.mp4). GitHub's player uses an uploaded attachment; the original MP4 remains in `docs/media/earcontrol-demo.mp4`. After rendering a replacement, upload it as a GitHub video attachment and update the standalone player URL here and in the root README.
 
 See [credits](CREDITS.md) before sharing; the music requires attribution. [Share copy](share-copy.txt) includes that credit.
 

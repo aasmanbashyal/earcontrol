@@ -4,13 +4,13 @@ Map headphone media commands to Windows shortcuts and macros.
 
 https://github.com/user-attachments/assets/53dbceda-f306-42fe-b55f-9e94693331cb
 
-[Download the 20-second demo](https://github.com/aasmanbashyal/aircontrol/raw/refs/heads/main/docs/media/earcontrol-demo.mp4) · [User guide](docs/user-guide.md) · [Development](CONTRIBUTING.md) · [Support](SUPPORT.md)
+[Download the 20-second demo](https://github.com/aasmanbashyal/earcontrol/raw/refs/heads/main/docs/media/earcontrol-demo.mp4) · [User guide](docs/user-guide.md) · [Development](CONTRIBUTING.md) · [Support](SUPPORT.md)
 
 EarControl lets a supported headphone command advance a slide, run a shortcut, or execute an ordered macro. Use Monitor to see what Windows receives, choose a profile and target window, then start control.
 
 ## Get started
 
-Version **2.1.2** has Windows installer and portable builds. Published downloads appear on the [Releases page](https://github.com/aasmanbashyal/aircontrol/releases). Before publication, signed-in GitHub users can open a successful [Windows build](https://github.com/aasmanbashyal/aircontrol/actions/workflows/windows.yml) and download its `EarControl-windows-x64` artifact.
+Version **2.1.2** has Windows installer and portable builds. Published downloads appear on the [Releases page](https://github.com/aasmanbashyal/earcontrol/releases). Before publication, signed-in GitHub users can open a successful [Windows build](https://github.com/aasmanbashyal/earcontrol/actions/workflows/windows.yml) and download its `EarControl-windows-x64` artifact.
 
 - **Installer:** `EarControl_2.1.2_x64-setup.exe`, for a per-user installation.
 - **Portable:** extract `EarControl-2.1.2-win-x64.zip` and open `EarControl.exe`.
