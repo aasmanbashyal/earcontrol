@@ -11,10 +11,12 @@ PowerShell in `scripts/windows.ps1` is the shared local/CI entry point. It uses 
 
 Windows x64 builds link the C runtime statically using `.cargo/config.toml`, so they do not require a separately installed Visual C++ Redistributable. The verifier checks the executable's x64 GUI headers, version resources, and ordinary and RVA-based delay imports for Visual C++ runtime DLLs. This checks declared imports, not arbitrary DLLs loaded at runtime. System Windows DLLs and the OpenGL driver remain required. The same verifier runs in local release checks and both packaging workflows.
 
-Installer execution needs a disposable Windows VM or Windows Sandbox for isolated QA. A custom `/D` directory alone is not isolation: installation still changes the current user's Start menu and uninstall registry entries. In that disposable environment, check a clean install, upgrade from 2.1.2 with existing profiles, refusal to replace a running executable, and uninstall while preserving profiles. Artifact verification does not execute the installer or establish those results.
+The hosted Windows workflow runs `./scripts/test-installer.ps1 -DisposableVm` on a fresh VM after packaging. It tests a clean install and uninstall, then downloads the published 2.1.2 installer and checks its SHA-256. It installs 2.1.2 into a custom directory, writes a version-2 profile fixture, and checks that the 3.0 installer refuses to replace the 2.x registration. After uninstalling 2.1.2 and installing 3.0, it verifies the Start menu target, installed files, and profile hash. It checks the profile hash again after uninstalling 3.0. The Rust test suite loads the same fixture through the app's settings loader.
+
+To repeat installer QA locally, use a disposable Windows VM or Windows Sandbox. A custom `/D` directory still changes the current user's Start menu and uninstall registry entries. For an interactive check, confirm that 3.0 opens the saved profile after uninstalling 2.1.2 with **Delete app data** unchecked, and that reinstalling 3.x while its executable is running asks you to close it.
 
 A pushed `vX.Y.Z` tag triggers `.github/workflows/release.yml`. It checks the tag, tests, packages, verifies and creates a draft GitHub Release for review. Ordinary push/PR jobs have read-only repository permissions. Local packaging does not push a branch, tag or release.
 
-Binaries are unsigned. Hosted CI, code signing and an installed 2.x-to-3.x upgrade test are separate release checks. Do not publish the native port as a tested upgrade until that installation check has been performed. Existing version-2 JSON profiles require no conversion.
+Binaries are unsigned. Require a green hosted Windows build for the release revision and a passing installer and migration check before publication. Existing version-2 JSON profiles require no conversion.
 
 Application source is [MIT licensed](../LICENSE). Historical demo assets retain their separate licenses in the media credits.

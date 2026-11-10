@@ -1,8 +1,15 @@
+use crate::model::AccentColor;
 use eframe::egui::{
     self, Align2, Color32, FontFamily, FontId, Painter, Rect, Response, RichText, Sense, Stroke,
     StrokeKind, Ui, Vec2,
 };
 use std::sync::{Arc, OnceLock};
+
+const ACCENT_ID: &str = "app_accent";
+
+pub fn set_accent(ctx: &egui::Context, accent: AccentColor) {
+    ctx.data_mut(|data| data.insert_temp(egui::Id::new(ACCENT_ID), accent));
+}
 
 #[derive(Clone, Copy)]
 pub struct Palette {
@@ -22,7 +29,27 @@ pub struct Palette {
 }
 impl Palette {
     pub fn get(ctx: &egui::Context) -> Self {
-        Self::for_dark(ctx.style().visuals.dark_mode)
+        let accent = ctx
+            .data(|data| data.get_temp(egui::Id::new(ACCENT_ID)))
+            .unwrap_or_default();
+        Self::for_accent(ctx.style().visuals.dark_mode, accent)
+    }
+    pub fn for_accent(dark: bool, accent: AccentColor) -> Self {
+        let mut palette = Self::for_dark(dark);
+        let (light_theme, dark_theme) = match accent {
+            AccentColor::Neutral => return palette,
+            AccentColor::Blue => {
+                palette.primary = Color32::from_rgb(39, 103, 228);
+                palette.primary_text = Color32::WHITE;
+                return palette;
+            }
+            AccentColor::Green => ([23, 112, 50], [96, 207, 115]),
+            AccentColor::Amber => ([135, 78, 8], [247, 186, 100]),
+            AccentColor::Red => ([190, 35, 44], [255, 121, 121]),
+        };
+        let [r, g, b] = if dark { dark_theme } else { light_theme };
+        palette.primary = Color32::from_rgb(r, g, b);
+        palette
     }
     pub fn for_dark(dark: bool) -> Self {
         let gray = Color32::from_gray;
@@ -91,16 +118,37 @@ pub fn slider(ui: &mut Ui, slider: egui::Slider<'_>) -> Response {
     ui.scope(|ui| {
         ui.spacing_mut().slider_rail_height = 6.0;
         let visuals = ui.visuals_mut();
-        visuals.selection.bg_fill = p.text;
+        visuals.selection.bg_fill = p.primary;
         for widget in [
             &mut visuals.widgets.inactive,
             &mut visuals.widgets.hovered,
             &mut visuals.widgets.active,
         ] {
-            widget.bg_fill = p.input_line;
-            widget.fg_stroke = Stroke::new(2.0_f32, p.text);
+            widget.bg_fill = p.primary;
+            widget.fg_stroke = Stroke::new(2.0_f32, p.primary);
         }
-        ui.add(slider.trailing_fill(true))
+        visuals.widgets.active.fg_stroke = Stroke::new(2.0_f32, p.primary_text);
+
+        // egui uses the inactive thumb fill for the rail too. Recolor the first
+        // slider shape (the full rail) and retain egui's interaction and geometry.
+        let layer = ui.layer_id();
+        let rail = ui
+            .ctx()
+            .graphics_mut(|layers| layers.entry(layer).next_idx());
+        let response = ui.add(slider.trailing_fill(true));
+        let opacity = ui.painter().opacity();
+        let accent = p.primary.gamma_multiply(opacity);
+        let rail_fill = p.input_line.gamma_multiply(opacity);
+        ui.ctx().graphics_mut(|layers| {
+            layers.entry(layer).mutate_shape(rail, |shape| {
+                if let egui::Shape::Rect(rect) = &mut shape.shape {
+                    if rect.fill == accent && rect.stroke.is_empty() {
+                        rect.fill = rail_fill;
+                    }
+                }
+            });
+        });
+        response
     })
     .inner
 }
@@ -434,60 +482,56 @@ pub fn brand(painter: &Painter, rect: Rect, color: Color32, bg: Color32) {
 }
 pub fn button(ui: &mut Ui, label: &str, icon: Option<Icon>, primary: bool) -> Response {
     let palette = Palette::get(ui.ctx());
+    let enabled = ui.is_enabled();
     let galley = ui
         .painter()
         .layout_no_wrap(label.into(), font(13., true), palette.text);
     let width = galley.size().x + 28. + if icon.is_some() { 22. } else { 0. };
     let (rect, response) = ui.allocate_exact_size(egui::vec2(width, 36.), Sense::click());
-    response.widget_info(|| {
-        egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), label)
-    });
-    let color = if primary {
-        palette.primary_text
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, label));
+    let (fill, color, border) = if !enabled {
+        (palette.soft, palette.muted, palette.input_line)
+    } else if primary {
+        (palette.primary, palette.primary_text, palette.primary)
     } else {
-        palette.text
+        let fill = if response.hovered() {
+            palette.hover
+        } else {
+            palette.surface
+        };
+        (fill, palette.text, palette.input_line)
     };
-    let fill = if primary {
-        palette.primary
-    } else if response.hovered() {
-        palette.hover
-    } else {
-        palette.surface
-    };
-    let alpha = if ui.is_enabled() { 1. } else { 0.45 };
-    ui.painter().rect(
+    let mut painter = ui.painter().clone();
+    if !enabled {
+        // The disabled colors already distinguish the button. Keep them readable
+        // by undoing egui's disabled fade while preserving other opacity.
+        painter.set_opacity(painter.opacity() / ui.visuals().disabled_alpha());
+    }
+    painter.rect(
         rect,
         7.,
-        fill.gamma_multiply(alpha),
-        Stroke::new(
-            1.0_f32,
-            if primary {
-                palette.primary
-            } else {
-                palette.input_line
-            }
-            .gamma_multiply(alpha),
-        ),
+        fill,
+        Stroke::new(1.0_f32, border),
         StrokeKind::Inside,
     );
     let x = rect.min.x + 14.;
     if let Some(icon) = icon {
         draw_icon(
-            ui.painter(),
+            &painter,
             Rect::from_center_size(egui::pos2(x + 7.5, rect.center().y), Vec2::splat(15.)),
             icon,
-            color.gamma_multiply(alpha),
+            color,
         );
     }
-    ui.painter().text(
+    painter.text(
         egui::pos2(x + if icon.is_some() { 22. } else { 0. }, rect.center().y),
         Align2::LEFT_CENTER,
         label,
         font(13., true),
-        color.gamma_multiply(alpha),
+        color,
     );
     if response.has_focus() {
-        ui.painter().rect_stroke(
+        painter.rect_stroke(
             rect.expand(2.),
             8.,
             Stroke::new(1.5_f32, palette.text),
@@ -1032,6 +1076,33 @@ mod tests {
             ..Default::default()
         }
     }
+    #[test]
+    fn disabled_primary_button_keeps_readable_text_in_both_themes() {
+        for theme in [egui::ThemePreference::Light, egui::ThemePreference::Dark] {
+            let ctx = egui::Context::default();
+            configure_style(&ctx);
+            ctx.set_theme(theme);
+            set_accent(&ctx, AccentColor::Amber);
+            let output = ctx.run(input(Vec::new()), |ctx| {
+                egui::CentralPanel::default().show(ctx, |ui| {
+                    let response = ui
+                        .add_enabled_ui(false, |ui| {
+                            button(ui, "Save & start", Some(Icon::Play), true)
+                        })
+                        .inner;
+                    assert!(!response.enabled());
+                });
+            });
+            let palette = Palette::get(&ctx);
+            assert!(output.shapes.iter().any(|shape| {
+                matches!(&shape.shape, egui::Shape::Text(text)
+                    if text.galley.text() == "Save & start"
+                        && text.fallback_color == palette.muted
+                        && text.opacity_factor == 1.0)
+            }));
+        }
+    }
+
     #[test]
     fn custom_toggle_supports_pointer_and_keyboard_activation() {
         let ctx = egui::Context::default();

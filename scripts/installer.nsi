@@ -1,6 +1,7 @@
 Unicode true
 !include "MUI2.nsh"
 !include "x64.nsh"
+!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\EarControl"
 Name "EarControl"
 OutFile "${ROOT}\dist\EarControl_${VERSION}_x64-setup.exe"
 InstallDir "$LOCALAPPDATA\EarControl"
@@ -28,6 +29,14 @@ Function .onInit
         MessageBox MB_OK|MB_ICONSTOP "EarControl requires Windows 10/11 x64."
         Abort
     ${EndIf}
+    ; Tauri 2.x owns the same uninstall entry and may live in a custom directory.
+    ReadRegStr $0 HKCU "${UNINSTALL_KEY}" "DisplayVersion"
+    StrCpy $0 $0 2
+    ${If} $0 == "2."
+        MessageBox MB_OK|MB_ICONSTOP "Uninstall EarControl 2.x in Windows Settings before installing 3.0. Leave Delete app data unchecked to keep your profiles." /SD IDOK
+        SetErrorLevel 1
+        Abort
+    ${EndIf}
 FunctionEnd
 Section "EarControl"
     SetShellVarContext current
@@ -40,14 +49,14 @@ Section "EarControl"
     File /oname=THIRD-PARTY-NOTICES.txt "${ROOT}\desktop\assets\THIRD-PARTY-NOTICES.txt"
     File /oname=README.md "${ROOT}\docs\portable-readme.md"
     WriteUninstaller "$INSTDIR\Uninstall.exe"
-    CreateShortcut "$SMPROGRAMS\EarControl.lnk" "$INSTDIR\EarControl.exe"
+    CreateShortcut "$SMPROGRAMS\EarControl.lnk" "$INSTDIR\EarControl.exe" "" "" "" "" "" "Control slides and run shortcuts with your headphones"
     WriteRegStr HKCU "Software\EarControl" "InstallDir" "$INSTDIR"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EarControl" "DisplayName" "EarControl"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EarControl" "DisplayVersion" "${VERSION}"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EarControl" "DisplayIcon" "$INSTDIR\EarControl.exe"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EarControl" "UninstallString" '"$INSTDIR\Uninstall.exe"'
-    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EarControl" "NoModify" 1
-    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EarControl" "NoRepair" 1
+    WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayName" "EarControl"
+    WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayVersion" "${VERSION}"
+    WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayIcon" "$INSTDIR\EarControl.exe"
+    WriteRegStr HKCU "${UNINSTALL_KEY}" "UninstallString" '"$INSTDIR\Uninstall.exe"'
+    WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoModify" 1
+    WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoRepair" 1
 SectionEnd
 Section "Uninstall"
     SetShellVarContext current
@@ -64,6 +73,6 @@ Section "Uninstall"
     Delete "$INSTDIR\Uninstall.exe"
     RMDir "$INSTDIR"
     Delete "$SMPROGRAMS\EarControl.lnk"
-    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EarControl"
+    DeleteRegKey HKCU "${UNINSTALL_KEY}"
     DeleteRegKey HKCU "Software\EarControl"
 SectionEnd

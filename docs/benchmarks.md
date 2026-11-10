@@ -1,6 +1,6 @@
 # Rust port benchmarks and validation
 
-This historical report compares the preserved EarControl 2.1.2 Windows release with the initial native Rust 3.0.0 build on `feat/rust-native-ui`, committed as `aedea25`. The 2.1.2 baseline source revision is `82165a4`. Raw results include the exact executable hashes, file sizes, hardware, settings method and individual samples. Subsequent changes and current artifact sizes are recorded in [optimization results](optimization.md).
+This historical report compares a preserved local EarControl 2.1.2 build from `82165a4` with the initial native Rust 3.0.0 build at `aedea25`. Raw results include the executable hashes, sizes, hardware, settings method, and individual samples. See the [3.0.0 release report](release-3.0.0.md) for the current candidate measured against the published GitHub release.
 
 ## Process comparison
 

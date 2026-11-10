@@ -40,6 +40,17 @@ pub struct Profile {
     pub mappings: Vec<Mapping>,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AccentColor {
+    #[default]
+    Neutral,
+    Blue,
+    Green,
+    Amber,
+    Red,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
@@ -49,6 +60,8 @@ pub struct Settings {
     pub keyboard_fallback: bool,
     pub cooldown_ms: u64,
     pub theme: String,
+    #[serde(default)]
+    pub accent_color: AccentColor,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -148,6 +161,7 @@ impl Default for Settings {
             keyboard_fallback: true,
             cooldown_ms: 180,
             theme: "light".into(),
+            accent_color: AccentColor::default(),
         }
     }
 }
@@ -356,13 +370,17 @@ mod tests {
 
     #[test]
     fn json_contract_uses_camel_case_and_tagged_steps() {
-        let value = serde_json::to_value(Settings::default()).unwrap();
+        let mut value = serde_json::to_value(Settings::default()).unwrap();
         assert_eq!(value["activeProfileId"], "slides");
         assert_eq!(
             value["profiles"][0]["mappings"][0]["steps"][0],
             serde_json::json!({"kind":"key", "keys":"Right"})
         );
         assert!(value.get("active_profile_id").is_none());
+        assert_eq!(
+            value.as_object_mut().unwrap().remove("accentColor"),
+            Some("neutral".into())
+        );
         let roundtrip: Settings = serde_json::from_value(value).unwrap();
         assert_eq!(roundtrip, Settings::default());
     }

@@ -28,6 +28,10 @@ jobs:
       - name: Verify release artifacts
         shell: pwsh
         run: ./scripts/verify-release.ps1
+      - name: Test clean install and 2.1.2 migration
+        shell: pwsh
+        timeout-minutes: 5
+        run: ./scripts/test-installer.ps1 -DisposableVm
       - uses: actions/upload-artifact@v4
         with:
           name: EarControl-windows-x64

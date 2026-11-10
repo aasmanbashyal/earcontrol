@@ -2,6 +2,8 @@
 
 ## 3.0.0, native Rust port
 
+- Added a saved accent color and kept Activity and Button check ordered when input and macro workers publish concurrently.
+- The installer asks users with EarControl 2.x installed to uninstall it first and keep app data, preserving both the old uninstall entry and existing profiles during migration.
 - Prevented delayed callbacks from restoring an old cooldown after Stop or Retry input.
 - Preserved the release decision for a consumed media key held through Stop, including repeated key-down events.
 - Fixed Practice arrow-key focus and added a full-frame navigation regression. Refocusing an already-selected Practice deck now keeps control running.

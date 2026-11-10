@@ -76,6 +76,27 @@ mod tests {
     use crate::model::MacroStep;
 
     #[test]
+    fn loads_the_2_1_2_installer_migration_fixture() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("profiles.json");
+        let original = include_bytes!("../tests/fixtures/v2.1.2-profiles.json");
+        std::fs::write(&path, original).unwrap();
+
+        let (settings, warning) = load_settings(&path);
+        assert!(warning.is_none(), "{warning:?}");
+        assert_eq!(settings.active_profile_id, "migration-check");
+        assert_eq!(settings.cooldown_ms, 420);
+        assert_eq!(settings.accent_color, crate::model::AccentColor::Neutral);
+        assert_eq!(
+            settings.profiles[0].mappings[1].steps,
+            [MacroStep::Text {
+                text: "नमस्ते".into()
+            }]
+        );
+        assert_eq!(std::fs::read(&path).unwrap(), original);
+    }
+
+    #[test]
     fn missing_file_returns_defaults_without_warning() {
         let directory = tempfile::tempdir().unwrap();
         let (settings, warning) = load_settings(&directory.path().join("settings.json"));

@@ -13,6 +13,35 @@ $ErrorActionPreference = 'Stop'
 $baselinePath = (Resolve-Path -LiteralPath $Baseline).Path
 $candidatePath = (Resolve-Path -LiteralPath $Candidate).Path
 if (Get-Process earcontrol -ErrorAction SilentlyContinue) { throw 'Close running EarControl copies before benchmarking. No existing process will be terminated.' }
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+
+public static class EarControlBenchmarkWindow {
+    private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr parameter);
+    [DllImport("user32.dll")] private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr parameter);
+    [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
+    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hwnd, StringBuilder title, int maxCount);
+
+    public static bool IsMainWindowVisible(int processId) {
+        bool found = false;
+        EnumWindows((hwnd, parameter) => {
+            uint owner;
+            GetWindowThreadProcessId(hwnd, out owner);
+            if (owner != processId || !IsWindowVisible(hwnd)) return true;
+            var title = new StringBuilder(256);
+            GetWindowText(hwnd, title, title.Capacity);
+            string name = title.ToString();
+            found = name == "EarControl" || (name.StartsWith("EarControl \u00b7 ", StringComparison.Ordinal)
+                && name.IndexOf("practice", StringComparison.OrdinalIgnoreCase) < 0);
+            return !found;
+        }, IntPtr.Zero);
+        return found;
+    }
+}
+'@
 $scratch = Join-Path ([IO.Path]::GetTempPath()) ("earcontrol-bench-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $scratch | Out-Null
 $baselineSettings = Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'app.earcontrol.desktop/profiles.json'
@@ -51,13 +80,14 @@ function Measure-Launch([string]$Name, [string]$Path, [int]$Round) {
     $watch = [Diagnostics.Stopwatch]::StartNew()
     $process = [Diagnostics.Process]::Start($startInfo)
     try {
+        $visible = $false
         do {
             if ($process.HasExited) { throw "$Name exited before its window became visible." }
-            $process.Refresh()
-            if ($process.MainWindowHandle -ne 0) { break }
+            $visible = [EarControlBenchmarkWindow]::IsMainWindowVisible($process.Id)
+            if ($visible) { break }
             Start-Sleep -Milliseconds 10
         } while ($watch.Elapsed.TotalSeconds -lt 30)
-        if ($process.MainWindowHandle -eq 0) { throw "$Name did not create a visible top-level window within 30 seconds." }
+        if (!$visible) { throw "$Name did not create a visible EarControl main window within 30 seconds." }
         $windowMs = $watch.Elapsed.TotalMilliseconds
         Start-Sleep -Seconds $SettleSeconds
         $initial = @(Read-ProcessTree $process.Id)
@@ -118,7 +148,7 @@ $result = [ordered]@{
     measured_at_utc=[DateTime]::UtcNow.ToString('o'); os=$os.Caption; os_version=$os.Version
     cpu=$cpu.Name; logical_processors=$cpu.NumberOfLogicalProcessors; ram_bytes=[long]$os.TotalVisibleMemorySize*1024
     graphics=@(Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion)
-    method='One unmeasured warmup per app; interleaved launch order; visible top-level window proxy, not first painted frame; descendant-tree memory; summed working sets can double-count shared pages. Idle CPU is the delta for processes present at both snapshots; children born and exited between snapshots are not observed.'
+    method='One unmeasured warmup per app; interleaved launch order; visible titled EarControl main window, not first painted frame; descendant-tree memory; summed working sets can double-count shared pages. Idle CPU is the delta for processes present at both snapshots; children born and exited between snapshots are not observed.'
     settings=$settingsMethod
     runs=$Runs; settle_seconds=$SettleSeconds; idle_seconds=$IdleSeconds
     baseline=@{ version=(Get-Item $baselinePath).VersionInfo.ProductVersion; bytes=(Get-Item $baselinePath).Length; sha256=(Get-FileHash $baselinePath).Hash.ToLowerInvariant() }

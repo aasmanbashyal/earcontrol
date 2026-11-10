@@ -1,6 +1,6 @@
 use crate::{
     design::{self, Icon, Palette},
-    model::{self, DeviceInfo, MacroStep, Mapping, Profile, Settings, TargetWindow},
+    model::{self, AccentColor, DeviceInfo, MacroStep, Mapping, Profile, Settings, TargetWindow},
     native,
     practice::Practice,
     runtime::AppState,
@@ -49,6 +49,12 @@ fn capture_message(health: &native::CaptureHealth) -> (&'static str, bool) {
     if !health.input_thread_alive {
         return ("Windows input stopped. Restart EarControl.", true);
     }
+    if health.media_commands > 0 {
+        return ("Media commands received in this session.", false);
+    }
+    if health.keyboard_commands > 0 {
+        return ("Keyboard media keys received in this session.", false);
+    }
     match health.route {
         native::CaptureRoute::Checking => {
             ("Checking which app Windows sends media buttons to…", false)
@@ -57,13 +63,16 @@ fn capture_message(health: &native::CaptureHealth) -> (&'static str, bool) {
             ("Windows selects EarControl. Try an earbud gesture.", false)
         }
         native::CaptureRoute::OtherApp => (
-            "Windows selects another media app. Pause it, then retry input.",
-            true,
+            "Windows selected another media app. If buttons don't respond, pause it and retry.",
+            false,
         ),
-        native::CaptureRoute::None => ("Windows has no media session selected. Retry input.", true),
+        native::CaptureRoute::None => (
+            "Windows has no media session selected. Retry input if buttons don't respond.",
+            false,
+        ),
         native::CaptureRoute::Unavailable => (
-            "Windows media routing could not be checked. Retry input.",
-            true,
+            "Windows media routing is unknown. Retry input if buttons don't respond.",
+            false,
         ),
     }
 }
@@ -314,6 +323,7 @@ impl EarControl {
     }
 
     pub fn show(&mut self, ctx: &egui::Context) {
+        design::set_accent(ctx, self.draft.accent_color);
         ctx.set_theme(match self.draft.theme.as_str() {
             "light" => egui::ThemePreference::Light,
             "dark" => egui::ThemePreference::Dark,
@@ -435,7 +445,11 @@ impl EarControl {
                             egui::Vec2::splat(17.0),
                         ),
                         view_icon(view),
-                        color,
+                        if self.view == view {
+                            palette.primary
+                        } else {
+                            color
+                        },
                     );
                     ui.painter().text(
                         egui::pos2(rect.left() + 43.0, rect.center().y),
@@ -582,7 +596,11 @@ impl EarControl {
                                             Icon::Monitor,
                                             palette.muted,
                                         );
+                                        let combo_width = ui.available_width()
+                                            - 28.0
+                                            - ui.spacing().item_spacing.x;
                                         ui.scope(|ui| {
+                                            ui.set_max_width(combo_width);
                                             ui.visuals_mut().widgets.inactive.bg_stroke =
                                                 egui::Stroke::NONE;
                                             ui.visuals_mut().widgets.hovered.bg_stroke =
@@ -591,10 +609,12 @@ impl EarControl {
                                                 .target
                                                 .as_ref()
                                                 .map(|w| w.title.as_str())
-                                                .unwrap_or("Choose a window to control");
+                                                .unwrap_or("Choose a window to control")
+                                                .to_owned();
                                             egui::ComboBox::from_id_salt("target")
-                                                .width((target_width - 74.0).max(70.0))
-                                                .selected_text(design::text(title, 12.0))
+                                                .width(combo_width)
+                                                .truncate()
+                                                .selected_text(design::text(&title, 12.0))
                                                 .show_ui(ui, |ui| {
                                                     ui.add(
                                                         design::singleline(&mut self.window_search)
@@ -616,7 +636,10 @@ impl EarControl {
                                                             );
                                                         }
                                                     }
-                                                });
+                                                })
+                                                .response
+                                                .on_hover_text(&title)
+                                                .on_disabled_hover_text(title);
                                         });
                                         if design::icon_button(
                                             ui,
@@ -1564,10 +1587,6 @@ impl EarControl {
         let Some((id, index, widget)) = self.recording.clone() else {
             return;
         };
-        if !ctx.memory(|m| m.has_focus(widget)) {
-            self.recording = None;
-            return;
-        }
         let event = ctx.input(|i| {
             i.events.iter().find_map(|e| match e {
                 egui::Event::Key {
@@ -1580,6 +1599,18 @@ impl EarControl {
                 _ => None,
             })
         });
+        // egui clears focus for Escape before this frame's widgets run. The
+        // recorder still owns that key if it held focus in the previous frame.
+        let owns_key = ctx.memory(|memory| {
+            memory.has_focus(widget)
+                || (memory.focused().is_none()
+                    && memory.had_focus_last_frame(widget)
+                    && event.is_some_and(|(key, _)| key == egui::Key::Escape))
+        });
+        if !owns_key {
+            self.recording = None;
+            return;
+        }
         if let Some((key, modifiers)) = event {
             let shortcut = recorded_shortcut(key, modifiers, native::win_key_held());
             if let Some(shortcut) = shortcut {
@@ -1596,6 +1627,11 @@ impl EarControl {
                 ctx.input_mut(|i| {
                     i.events
                         .retain(|e| !matches!(e, egui::Event::Key { .. } | egui::Event::Text(_)))
+                });
+                // Tab/arrows are shortcut input here, not focus navigation.
+                ctx.memory_mut(|memory| {
+                    memory.move_focus(egui::FocusDirection::None);
+                    memory.request_focus(widget);
                 });
                 self.recording = None;
                 self.validation = model::validate_settings(&self.draft).err();
@@ -1857,6 +1893,54 @@ impl EarControl {
                             self.draft.theme = theme.into();
                         }
                     });
+                }
+            });
+            ui.add_space(10.0);
+            ui.label(design::strong("Accent color", 13.0));
+            ui.horizontal_wrapped(|ui| {
+                let dark = ui.visuals().dark_mode;
+                for (accent, label) in [
+                    (AccentColor::Neutral, "Neutral"),
+                    (AccentColor::Blue, "Angelswing blue"),
+                    (AccentColor::Green, "Green"),
+                    (AccentColor::Amber, "Amber"),
+                    (AccentColor::Red, "Red"),
+                ] {
+                    let swatch = Palette::for_accent(dark, accent);
+                    let (rect, response) =
+                        ui.allocate_exact_size(egui::Vec2::splat(36.0), egui::Sense::click());
+                    if response.clicked() {
+                        self.draft.accent_color = accent;
+                    }
+                    let selected = self.draft.accent_color == accent;
+                    response.widget_info(|| {
+                        egui::WidgetInfo::selected(
+                            egui::WidgetType::RadioButton,
+                            ui.is_enabled(),
+                            selected,
+                            label,
+                        )
+                    });
+                    let center = rect.center();
+                    if response.hovered() {
+                        ui.painter().circle_filled(center, 18.0, p.hover);
+                    }
+                    ui.painter().circle_filled(center, 12.0, swatch.primary);
+                    if selected {
+                        ui.painter().circle_stroke(
+                            center,
+                            16.0,
+                            egui::Stroke::new(1.5_f32, swatch.primary),
+                        );
+                        design::draw_icon(
+                            ui.painter(),
+                            egui::Rect::from_center_size(center, egui::Vec2::splat(15.0)),
+                            Icon::Check,
+                            swatch.primary_text,
+                        );
+                    }
+                    focus_outline(ui, &response, rect);
+                    response.on_hover_text(label);
                 }
             });
             section_divider(ui);
@@ -2569,6 +2653,158 @@ mod tests {
     use super::*;
 
     #[test]
+    fn media_routing_guidance_yields_to_received_input() {
+        let mut health = native::CaptureHealth {
+            input_thread_alive: true,
+            keyboard_fallback: true,
+            ..Default::default()
+        };
+        for route in [
+            native::CaptureRoute::OtherApp,
+            native::CaptureRoute::None,
+            native::CaptureRoute::Unavailable,
+        ] {
+            health.route = route;
+            assert!(!capture_message(&health).1);
+            health.keyboard_commands = 1;
+            assert_eq!(
+                capture_message(&health),
+                ("Keyboard media keys received in this session.", false)
+            );
+            health.keyboard_commands = 0;
+        }
+        health.media_commands = 1;
+        assert_eq!(
+            capture_message(&health),
+            ("Media commands received in this session.", false)
+        );
+        health.input_thread_alive = false;
+        assert!(capture_message(&health).1);
+    }
+
+    #[test]
+    fn long_target_titles_fit_before_refresh_and_status() {
+        let directory = tempfile::tempdir().unwrap();
+        let runtime = AppState::new(directory.path().join("profiles.json"), || {});
+        let mut app = EarControl::from_runtime(runtime);
+        let title = "Long presentation title in a browser ".repeat(12);
+        app.target = Some(TargetWindow {
+            handle: 1,
+            process_id: 1,
+            title: title.clone(),
+        });
+        for size in [[860.0, 620.0], [1160.0, 780.0]] {
+            let ctx = egui::Context::default();
+            configure_style(&ctx);
+            ctx.enable_accesskit();
+            let output = ctx.run(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(size[0], size[1]),
+                    )),
+                    ..Default::default()
+                },
+                |ctx| app.show(ctx),
+            );
+            assert!(output.shapes.iter().any(|shape| {
+                matches!(&shape.shape, egui::Shape::Text(text)
+                    if text.galley.text() == title && text.galley.elided)
+            }));
+            let badge = text_position(&output, "Idle");
+            let tree = output.platform_output.accesskit_update.unwrap();
+            let bounds = |predicate: fn(&egui::accesskit::Node) -> bool| {
+                tree.nodes
+                    .iter()
+                    .find(|(_, node)| predicate(node))
+                    .and_then(|(_, node)| node.bounds())
+                    .unwrap()
+            };
+            let target = tree
+                .nodes
+                .iter()
+                .find(|(_, node)| node.value() == Some(title.as_str()))
+                .unwrap()
+                .1
+                .bounds()
+                .unwrap();
+            let refresh = bounds(|node| node.label() == Some("Refresh target windows"));
+            assert!(target.x1 <= refresh.x0);
+            assert!(refresh.x1 < f64::from(badge.x - 23.0));
+        }
+    }
+
+    #[test]
+    fn accent_selection_previews_and_saves() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("profiles.json");
+        let runtime = AppState::new(path.clone(), || {});
+        let mut app = EarControl::from_runtime(runtime);
+        app.view = View::Settings;
+        let ctx = egui::Context::default();
+        configure_style(&ctx);
+        ctx.enable_accesskit();
+        let initial = frame(&mut app, &ctx, Vec::new());
+        let neutral = Palette::get(&ctx).primary;
+        let tree = initial.platform_output.accesskit_update.unwrap();
+        let blue = tree
+            .nodes
+            .iter()
+            .find(|(_, node)| {
+                node.role() == egui::accesskit::Role::RadioButton
+                    && node.label() == Some("Angelswing blue")
+            })
+            .unwrap()
+            .1
+            .bounds()
+            .unwrap();
+        click_at(
+            &mut app,
+            &ctx,
+            egui::pos2(
+                ((blue.x0 + blue.x1) / 2.0) as f32,
+                ((blue.y0 + blue.y1) / 2.0) as f32,
+            ),
+        );
+        let preview = frame(&mut app, &ctx, Vec::new());
+        let palette = Palette::get(&ctx);
+        let accent = palette.primary;
+        assert_ne!(accent, neutral);
+        assert_eq!(accent, egui::Color32::from_rgb(39, 103, 228));
+        assert_eq!(app.draft.accent_color, AccentColor::Blue);
+        let rail = preview
+            .shapes
+            .iter()
+            .find_map(|shape| match &shape.shape {
+                egui::Shape::Rect(rect)
+                    if rect.rect.height() == 6.0 && rect.fill == palette.input_line =>
+                {
+                    Some(rect.rect)
+                }
+                _ => None,
+            })
+            .expect("Slider must retain a neutral rail");
+        for height in [6.0, 36.0 / 2.5 * 2.0] {
+            assert!(
+                preview.shapes.iter().any(|shape| {
+                    matches!(&shape.shape, egui::Shape::Rect(rect)
+                    if rect.rect.intersects(rail) && (rect.rect.height() - height).abs() < 0.1
+                        && rect.fill == accent)
+                }),
+                "Slider must use the accent on its filled track and thumb"
+            );
+        }
+        click_at(&mut app, &ctx, text_position(&preview, "Save changes"));
+        assert_eq!(
+            settings::read_settings(&path)
+                .unwrap()
+                .unwrap()
+                .accent_color,
+            AccentColor::Blue
+        );
+    }
+
+    #[test]
     fn steady_frames_skip_draft_copy_but_uia_edits_cancel_pending_macro() {
         use std::time::Instant;
         use windows::{
@@ -3087,6 +3323,57 @@ mod tests {
             Some("Win+Escape".into())
         );
     }
+    #[test]
+    fn recording_handles_escape_tab_arrows_and_click_away_in_complete_frames() {
+        for (key, expected) in [
+            (Some(egui::Key::Escape), "Escape"),
+            (Some(egui::Key::Tab), "Tab"),
+            (Some(egui::Key::ArrowRight), "Right"),
+            (None, "F6"),
+        ] {
+            let directory = tempfile::tempdir().unwrap();
+            let runtime = AppState::new(directory.path().join("settings.json"), || {});
+            let mut app = EarControl::from_runtime(runtime);
+            app.view = View::Macros;
+            let profile = app.profile_index();
+            app.draft.profiles[profile].mappings[0].steps =
+                vec![MacroStep::Key { keys: "F6".into() }];
+            app.saved = app.draft.clone();
+            let ctx = egui::Context::default();
+            configure_style(&ctx);
+            let output = frame(&mut app, &ctx, Vec::new());
+            click_at(&mut app, &ctx, text_position(&output, "Record"));
+            assert!(app.recording.is_some());
+            if let Some(key) = key {
+                let _ = frame(
+                    &mut app,
+                    &ctx,
+                    vec![egui::Event::Key {
+                        key,
+                        physical_key: Some(key),
+                        pressed: true,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    }],
+                );
+            } else {
+                let mapping = &app.draft.profiles[profile].mappings[0];
+                let name = ctx
+                    .read_response(egui::Id::new(("action_name", &mapping.id)))
+                    .unwrap();
+                click_at(&mut app, &ctx, name.rect.center());
+            }
+            assert!(app.recording.is_none());
+            assert_eq!(
+                app.draft.profiles[profile].mappings[0].steps[0],
+                MacroStep::Key {
+                    keys: expected.into()
+                },
+                "Recording {key:?} must update the shortcut; clicking away must leave it unchanged",
+            );
+        }
+    }
+
     #[test]
     fn every_screen_renders_at_minimum_and_normal_size_in_both_themes() {
         let dir = tempfile::tempdir().unwrap();

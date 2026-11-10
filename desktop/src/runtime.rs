@@ -23,6 +23,20 @@ struct Session {
     latest_capture_event_id: Option<u64>,
 }
 
+impl Session {
+    fn record_capture_event(&mut self, event_id: u64, generation: u64) {
+        if self.generation == generation
+            && event_id >= self.capture_event_start
+            && ["monitor", "control"].contains(&self.mode.as_str())
+            && self
+                .latest_capture_event_id
+                .is_none_or(|latest| event_id > latest)
+        {
+            self.latest_capture_event_id = Some(event_id);
+        }
+    }
+}
+
 pub struct AppState {
     repaint: Arc<dyn Fn() + Send + Sync>,
     events: Mutex<VecDeque<ActivityEvent>>,
@@ -80,6 +94,9 @@ impl AppState {
         detail: String,
         generation: Option<u64>,
     ) {
+        // ID order must match insertion order even when a macro completes while
+        // the media worker publishes another report. Repaint stays outside locks.
+        let mut events = self.events.lock().unwrap();
         let event = ActivityEvent {
             id: self.event_id.fetch_add(1, Ordering::Relaxed),
             timestamp: SystemTime::now()
@@ -92,18 +109,16 @@ impl AppState {
             detail,
         };
         let event_id = event.id;
-        let mut events = self.events.lock().unwrap();
         events.push_front(event);
         events.truncate(250);
         drop(events);
         if let Some(generation) = generation {
-            let mut session = self.session.lock().unwrap();
-            if session.generation == generation
-                && event_id >= session.capture_event_start
-                && ["monitor", "control"].contains(&session.mode.as_str())
-            {
-                session.latest_capture_event_id = Some(event_id);
-            }
+            // A newer publisher may reach the session first after events is
+            // unlocked. Never let the delayed publisher rewind Button check.
+            self.session
+                .lock()
+                .unwrap()
+                .record_capture_event(event_id, generation);
         }
         (self.repaint)();
     }
@@ -562,6 +577,57 @@ impl AppState {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn delayed_publication_cannot_replace_a_newer_capture_preview() {
+        let mut session = Session {
+            mode: "control".into(),
+            generation: 4,
+            capture_event_start: 10,
+            ..Default::default()
+        };
+        // The macro and media workers have inserted events 10 and 11. Resume
+        // the earlier publisher only after the newer one updates the preview.
+        session.record_capture_event(11, 4);
+        session.record_capture_event(10, 4);
+        assert_eq!(session.latest_capture_event_id, Some(11));
+        session.record_capture_event(12, 3);
+        assert_eq!(session.latest_capture_event_id, Some(11));
+        session.record_capture_event(12, 4);
+        assert_eq!(session.latest_capture_event_id, Some(12));
+    }
+
+    #[test]
+    fn concurrent_activity_publishers_keep_newest_events_and_preview_in_order() {
+        let dir = tempfile::tempdir().unwrap();
+        let runtime = AppState::new(dir.path().join("profiles.json"), || {});
+        runtime.session.lock().unwrap().mode = "monitor".into();
+        let start = Arc::new(std::sync::Barrier::new(4));
+        let workers: Vec<_> = (0..4)
+            .map(|_| {
+                let runtime = Arc::clone(&runtime);
+                let start = Arc::clone(&start);
+                thread::spawn(move || {
+                    start.wait();
+                    for _ in 0..100 {
+                        runtime.capture_event("next", "test", "detected", "received", 0);
+                    }
+                })
+            })
+            .collect();
+        for worker in workers {
+            worker.join().unwrap();
+        }
+        let events = runtime.events();
+        assert_eq!(events.len(), 250);
+        assert_eq!(events.first().unwrap().id, 400);
+        assert_eq!(events.last().unwrap().id, 151);
+        assert!(events.windows(2).all(|pair| pair[0].id == pair[1].id + 1));
+        assert_eq!(
+            runtime.latest_capture_command_event(),
+            events.first().cloned()
+        );
+    }
 
     #[test]
     fn retry_does_not_start_capture_from_idle() {
