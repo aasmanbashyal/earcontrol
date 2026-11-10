@@ -1,0 +1,141 @@
+{
+  "measured_at_utc": "2026-11-10T06:55:10.3005543Z",
+  "os": "Microsoft Windows 11 Home",
+  "os_version": "10.0.26300",
+  "cpu": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics     ",
+  "logical_processors": 16,
+  "ram_bytes": 33515835392,
+  "graphics": [
+    {
+      "Name": "AMD Radeon 780M Graphics",
+      "DriverVersion": "31.0.14084.3001"
+    }
+  ],
+  "method": "One unmeasured warmup per app; interleaved launch order; visible top-level window proxy, not first painted frame; descendant-tree memory; summed working sets can double-count shared pages. Idle CPU is the delta for processes present at both snapshots; children born and exited between snapshots are not observed.",
+  "settings": "Both apps read the same existing configuration; candidate uses an isolated copy. Baseline only reads its original file.",
+  "runs": 5,
+  "settle_seconds": 5,
+  "idle_seconds": 5,
+  "baseline": {
+    "version": "2.1.2",
+    "sha256": "154e8c96b2b1401a4a8d9a625dbda0b9f79fdaab3a17e48ed79ae49a5a9830bd",
+    "bytes": 3416576
+  },
+  "candidate": {
+    "version": "3.0.0",
+    "sha256": "7660479022f65f25494019fe6eddf6c181813db9fc7cbf546194e8b060d047be",
+    "bytes": 3794944
+  },
+  "samples": [
+    {
+      "app": "tauri_2_1_2",
+      "round": 1,
+      "window_ms": 55.052,
+      "processes": 7,
+      "private_bytes": 226582528.0,
+      "working_set_bytes": 445169664.0,
+      "idle_cpu_ms": 610.0,
+      "idle_observation_ms": 5329.016,
+      "idle_cpu_one_core_pct": 11.4468
+    },
+    {
+      "app": "rust_3_0_0",
+      "round": 1,
+      "window_ms": 47.327,
+      "processes": 1,
+      "private_bytes": 142458880.0,
+      "working_set_bytes": 147525632.0,
+      "idle_cpu_ms": 62.0,
+      "idle_observation_ms": 5250.863,
+      "idle_cpu_one_core_pct": 1.1808
+    },
+    {
+      "app": "rust_3_0_0",
+      "round": 2,
+      "window_ms": 59.865,
+      "processes": 1,
+      "private_bytes": 141811712.0,
+      "working_set_bytes": 147841024.0,
+      "idle_cpu_ms": 47.0,
+      "idle_observation_ms": 5259.171,
+      "idle_cpu_one_core_pct": 0.8937
+    },
+    {
+      "app": "tauri_2_1_2",
+      "round": 2,
+      "window_ms": 58.505,
+      "processes": 7,
+      "private_bytes": 226369536.0,
+      "working_set_bytes": 444997632.0,
+      "idle_cpu_ms": 422.0,
+      "idle_observation_ms": 5338.182,
+      "idle_cpu_one_core_pct": 7.9053
+    },
+    {
+      "app": "tauri_2_1_2",
+      "round": 3,
+      "window_ms": 49.164,
+      "processes": 7,
+      "private_bytes": 224956416.0,
+      "working_set_bytes": 438939648.0,
+      "idle_cpu_ms": 611.0,
+      "idle_observation_ms": 5331.766,
+      "idle_cpu_one_core_pct": 11.4596
+    },
+    {
+      "app": "rust_3_0_0",
+      "round": 3,
+      "window_ms": 54.372,
+      "processes": 1,
+      "private_bytes": 141881344.0,
+      "working_set_bytes": 148287488.0,
+      "idle_cpu_ms": 31.0,
+      "idle_observation_ms": 5259.435,
+      "idle_cpu_one_core_pct": 0.5894
+    },
+    {
+      "app": "rust_3_0_0",
+      "round": 4,
+      "window_ms": 62.347,
+      "processes": 1,
+      "private_bytes": 141742080.0,
+      "working_set_bytes": 147533824.0,
+      "idle_cpu_ms": 62.0,
+      "idle_observation_ms": 5256.572,
+      "idle_cpu_one_core_pct": 1.1795
+    },
+    {
+      "app": "tauri_2_1_2",
+      "round": 4,
+      "window_ms": 56.011,
+      "processes": 7,
+      "private_bytes": 222179328.0,
+      "working_set_bytes": 438902784.0,
+      "idle_cpu_ms": 501.0,
+      "idle_observation_ms": 5326.88,
+      "idle_cpu_one_core_pct": 9.4051
+    },
+    {
+      "app": "tauri_2_1_2",
+      "round": 5,
+      "window_ms": 59.21,
+      "processes": 7,
+      "private_bytes": 224169984.0,
+      "working_set_bytes": 437649408.0,
+      "idle_cpu_ms": 532.0,
+      "idle_observation_ms": 5291.205,
+      "idle_cpu_one_core_pct": 10.0544
+    },
+    {
+      "app": "rust_3_0_0",
+      "round": 5,
+      "window_ms": 40.824,
+      "processes": 1,
+      "private_bytes": 142155776.0,
+      "working_set_bytes": 148418560.0,
+      "idle_cpu_ms": 125.0,
+      "idle_observation_ms": 5265.926,
+      "idle_cpu_one_core_pct": 2.3738
+    }
+  ]
+}

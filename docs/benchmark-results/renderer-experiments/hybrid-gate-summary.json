@@ -1,0 +1,92 @@
+{
+  "s_bytes": 2193920,
+  "hybrid_bytes": 2647040,
+  "size_increase_percent": 20.653442240373398,
+  "results": [
+    {
+      "workload": "parse_shortcut_ctrl_shift_f5",
+      "s_median_us": 0.14292,
+      "hybrid_median_us": 0.11302000000000001,
+      "speedup": 1.2645549460272516,
+      "latency_change_percent": -20.920794850265867
+    },
+    {
+      "workload": "validate_default_profiles",
+      "s_median_us": 2.26255,
+      "hybrid_median_us": 1.81575,
+      "speedup": 1.2460691174445822,
+      "latency_change_percent": -19.747629886632346
+    },
+    {
+      "workload": "decode_and_validate_profiles",
+      "s_median_us": 22.3894,
+      "hybrid_median_us": 20.4988,
+      "speedup": 1.092229789060823,
+      "latency_change_percent": -8.444174475421406
+    },
+    {
+      "workload": "dedup_accept_command",
+      "s_median_us": 0.04063,
+      "hybrid_median_us": 0.041495000000000004,
+      "speedup": 0.9791541149536087,
+      "latency_change_percent": 2.1289687423086567
+    },
+    {
+      "workload": "macro_dispatch_unicode_no_os_io",
+      "s_median_us": 0.6221,
+      "hybrid_median_us": 0.8386,
+      "speedup": 0.7418316241354639,
+      "latency_change_percent": 34.80147886191931
+    },
+    {
+      "workload": "ui_buttons",
+      "s_median_us": 387.95175000000006,
+      "hybrid_median_us": 388.00675,
+      "speedup": 0.9998582498886941,
+      "latency_change_percent": 0.014177020724859268
+    },
+    {
+      "workload": "ui_macros",
+      "s_median_us": 329.149,
+      "hybrid_median_us": 353.389,
+      "speedup": 0.9314070330429074,
+      "latency_change_percent": 7.364445889247739
+    },
+    {
+      "workload": "ui_devices",
+      "s_median_us": 249.39724999999999,
+      "hybrid_median_us": 248.90275000000003,
+      "speedup": 1.0019867197128194,
+      "latency_change_percent": -0.1982780483746116
+    },
+    {
+      "workload": "ui_activity",
+      "s_median_us": 197.344,
+      "hybrid_median_us": 187.02474999999998,
+      "speedup": 1.0551758523938677,
+      "latency_change_percent": -5.229067009891364
+    },
+    {
+      "workload": "ui_settings",
+      "s_median_us": 309.7105,
+      "hybrid_median_us": 307.12075,
+      "speedup": 1.0084323511192261,
+      "latency_change_percent": -0.8361841138740944
+    },
+    {
+      "workload": "ui_practice",
+      "s_median_us": 136.288,
+      "hybrid_median_us": 140.188,
+      "speedup": 0.9721802151396698,
+      "latency_change_percent": 2.86158722704859
+    },
+    {
+      "workload": "ui_buttons_32_profiles_unicode_macros",
+      "s_median_us": 463.89175,
+      "hybrid_median_us": 436.00424999999996,
+      "speedup": 1.063961532485062,
+      "latency_change_percent": -6.011639568929617
+    }
+  ],
+  "method": "Two balanced direct runs per profile; median of 42 warmed batch means"
+}

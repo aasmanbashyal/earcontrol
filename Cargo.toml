@@ -1,0 +1,14 @@
+[workspace]
+members = ["desktop"]
+resolver = "2"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
+panic = "abort"
+
+[patch.crates-io]
+eframe = { path = "vendor/eframe" }
+egui-winit = { path = "vendor/egui-winit" }

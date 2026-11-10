@@ -1,4 +1,4 @@
-param([ValidateSet('Check', 'Build', 'Dev', 'Test', 'WindowsTest', 'Package')][string]$Task = 'Build')
+param([ValidateSet('Setup', 'Check', 'Build', 'Dev', 'Test', 'WindowsTest', 'Package', 'Bench')][string]$Task = 'Build')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $localCargo = Join-Path $projectRoot '.tools\cargo'
@@ -7,64 +7,56 @@ if (Test-Path -LiteralPath (Join-Path $localCargo 'bin\cargo.exe')) {
     $env:RUSTUP_HOME = Join-Path $projectRoot '.tools\rustup'
     $env:PATH = "$localCargo\bin;$env:PATH"
 }
-Push-Location (Join-Path $projectRoot 'desktop')
+function Invoke-Cargo {
+    & cargo @args
+    if ($LASTEXITCODE -ne 0) { throw "Cargo failed with exit code $LASTEXITCODE" }
+}
+Push-Location $projectRoot
 try {
-    $releaseVersion = (Get-Content -LiteralPath 'package.json' -Raw | ConvertFrom-Json).version
-    $tauriVersion = (Get-Content -LiteralPath 'src-tauri/tauri.conf.json' -Raw | ConvertFrom-Json).version
-    $cargoManifest = Get-Content -LiteralPath 'src-tauri/Cargo.toml' -Raw
-    $cargoVersion = [regex]::Match($cargoManifest, '(?m)^version = "([^"]+)"').Groups[1].Value
-    if ($releaseVersion -ne $tauriVersion -or $releaseVersion -ne $cargoVersion) {
-        throw 'Versions in package.json, Cargo.toml, and tauri.conf.json must match.'
-    }
-    if (!(Test-Path -LiteralPath 'node_modules')) {
-        & bun install --frozen-lockfile
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    }
     switch ($Task) {
-        'Check' {
-            & bun run build
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            & cargo check --locked --manifest-path src-tauri/Cargo.toml
-        }
-        'Build' { & bun run tauri build --no-bundle -- --locked }
-        'Dev' { & bun run tauri dev }
-        'Test' {
-            & bun test src
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            & bun run build
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            & cargo test --locked --manifest-path src-tauri/Cargo.toml --lib
-        }
-        'WindowsTest' { & cargo test --locked --manifest-path src-tauri/Cargo.toml native_windows_smoke -- --ignored --test-threads=1 --nocapture }
-        'Package' { & bun run tauri build --ci --bundles nsis -- --locked }
+        'Setup' { Invoke-Cargo fetch --locked }
+        'Check' { Invoke-Cargo fmt --all '--' --check; Invoke-Cargo clippy --workspace --all-targets --locked '--' -D warnings }
+        'Test' { Invoke-Cargo test --workspace --locked; & "$PSScriptRoot/test-release-verification.ps1" }
+        'WindowsTest' { Invoke-Cargo test --locked native_windows_smoke '--' --ignored --test-threads=1 --nocapture }
+        'Dev' { Invoke-Cargo run --locked }
+        'Bench' { Invoke-Cargo bench --locked --bench workloads }
+        default { Invoke-Cargo build --release --locked }
     }
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    if ($Task -in @('Build', 'Package')) {
-        $portableDirectory = Join-Path $projectRoot "dist\EarControl-$releaseVersion"
-        # A fresh portable folder prevents stale files from entering the ZIP.
-        if (Test-Path -LiteralPath $portableDirectory) {
-            $resolvedPortable = (Resolve-Path -LiteralPath $portableDirectory).Path
-            $distRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot 'dist'))
-            if ((Split-Path -Parent $resolvedPortable) -ne $distRoot) { throw 'Portable directory must be inside dist.' }
-            Remove-Item -LiteralPath $resolvedPortable -Recurse -Force
-        }
-        New-Item -ItemType Directory -Path $portableDirectory -Force | Out-Null
-        Copy-Item -LiteralPath 'src-tauri\target\release\earcontrol.exe' -Destination (Join-Path $portableDirectory 'EarControl.exe') -Force
-        Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\portable-readme.md') -Destination (Join-Path $portableDirectory 'README.md') -Force
-        Copy-Item -LiteralPath (Join-Path $projectRoot 'LICENSE') -Destination (Join-Path $portableDirectory 'LICENSE') -Force
-        $portableZip = Join-Path $projectRoot "dist\EarControl-$releaseVersion-win-x64.zip"
-        Compress-Archive -Path (Join-Path $portableDirectory '*') -DestinationPath $portableZip -Force
-        $artifacts = @((Join-Path $portableDirectory 'EarControl.exe'), $portableZip)
-        if ($Task -eq 'Package') {
-            $installerName = "EarControl_${releaseVersion}_x64-setup.exe"
-            $installer = Join-Path $projectRoot "dist\$installerName"
-            Copy-Item -LiteralPath "src-tauri\target\release\bundle\nsis\$installerName" -Destination $installer -Force
-            $artifacts += $installer
-        }
-        $checksumLines = foreach ($artifact in $artifacts) {
-            $relativeArtifact = $artifact.Substring((Join-Path $projectRoot 'dist').Length + 1).Replace('\', '/')
-            '{0}  {1}' -f (Get-FileHash -LiteralPath $artifact -Algorithm SHA256).Hash.ToLowerInvariant(), $relativeArtifact
-        }
-        $checksumLines | Set-Content -LiteralPath (Join-Path $projectRoot "dist\EarControl-$releaseVersion-SHA256SUMS.txt") -Encoding ascii
+    if ($Task -notin @('Build', 'Package')) { return }
+    $releaseVersion = [regex]::Match((Get-Content desktop/Cargo.toml -Raw), '(?m)^version = "([^"]+)"').Groups[1].Value
+    & "$PSScriptRoot/verify-release.ps1" -VersionOnly
+    $portableDirectory = Join-Path $projectRoot "dist\EarControl-$releaseVersion"
+    if (Test-Path -LiteralPath $portableDirectory) {
+        $resolvedPortable = (Resolve-Path -LiteralPath $portableDirectory).Path
+        $distRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot 'dist'))
+        if ((Split-Path -Parent $resolvedPortable) -ne $distRoot) { throw 'Portable directory must be inside dist.' }
+        Remove-Item -LiteralPath $resolvedPortable -Recurse -Force
     }
+    New-Item -ItemType Directory -Path $portableDirectory -Force | Out-Null
+    Copy-Item -LiteralPath 'target\release\earcontrol.exe' -Destination (Join-Path $portableDirectory 'EarControl.exe')
+    Copy-Item -LiteralPath 'docs\portable-readme.md' -Destination (Join-Path $portableDirectory 'README.md')
+    Copy-Item -LiteralPath 'LICENSE' -Destination $portableDirectory
+    Copy-Item -LiteralPath 'desktop\assets\THIRD-PARTY-NOTICES.txt' -Destination (Join-Path $portableDirectory 'THIRD-PARTY-NOTICES.txt')
+    $portableZip = Join-Path $projectRoot "dist\EarControl-$releaseVersion-win-x64.zip"
+    Compress-Archive -Path $portableDirectory -DestinationPath $portableZip -Force
+    $artifacts = @((Join-Path $portableDirectory 'EarControl.exe'), $portableZip)
+    if ($Task -eq 'Package') {
+        $nsisCandidates = @(
+            (Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'),
+            (Join-Path $projectRoot '.tools\nsis\makensis.exe'),
+            (Join-Path $env:USERPROFILE 'AppData\Local\tauri\NSIS\makensis.exe')
+        )
+        if ($env:NSIS_HOME) { $nsisCandidates = @((Join-Path $env:NSIS_HOME 'makensis.exe')) + $nsisCandidates }
+        $makensis = $nsisCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+        if (!$makensis) { $command = Get-Command makensis -ErrorAction SilentlyContinue; if ($command) { $makensis = $command.Source } }
+        if (!$makensis) { throw 'Install NSIS 3 or set NSIS_HOME to its directory to build the installer.' }
+        & $makensis '/V2' "/DVERSION=$releaseVersion" "/DROOT=$projectRoot" "$PSScriptRoot/installer.nsi"
+        if ($LASTEXITCODE -ne 0) { throw 'NSIS packaging failed.' }
+        $artifacts += Join-Path $projectRoot "dist\EarControl_${releaseVersion}_x64-setup.exe"
+    }
+    $checksumLines = foreach ($artifact in $artifacts) {
+        $relativeArtifact = $artifact.Substring((Join-Path $projectRoot 'dist').Length + 1).Replace('\', '/')
+        '{0}  {1}' -f (Get-FileHash -LiteralPath $artifact -Algorithm SHA256).Hash.ToLowerInvariant(), $relativeArtifact
+    }
+    $checksumLines | Set-Content -LiteralPath "dist\EarControl-$releaseVersion-SHA256SUMS.txt" -Encoding ascii
 } finally { Pop-Location }

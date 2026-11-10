@@ -1,0 +1,30 @@
+{
+  "measured_at_utc": "2026-11-10T08:34:55.5387915Z",
+  "branch": "feat/rust-native-ui",
+  "source_baseline_commit": "aedea25",
+  "compiler": "rustc 1.99.1 (x86_64-pc-windows-msvc)",
+  "release_profile": "opt-level=s; codegen-units=1; lto=true; strip=true; panic=abort",
+  "workload_method": "Final production source; cargo bench --locked --offline --bench workloads --no-run, then direct executable with no compiler/probe active. Original workload baseline retained from before optimization.",
+  "artifacts": [
+    {
+      "path": "dist/EarControl-3.0.0/EarControl.exe",
+      "bytes": 2193920,
+      "sha256": "10f2bd96ccb7af1c4fbac62431722866a26336304a785b5999155c717c306f8f"
+    },
+    {
+      "path": "dist/EarControl-3.0.0-win-x64.zip",
+      "bytes": 1162680,
+      "sha256": "029c01f51e7a9807c2be88cd6d9aee1cc483a58afffb607d43978059fe9ee8e1"
+    },
+    {
+      "path": "dist/EarControl_3.0.0_x64-setup.exe",
+      "bytes": 970299,
+      "sha256": "b27bb91994ea260e4c37c86a48ba2ad551d9a57ef067f9cebc4197ea549dd253"
+    },
+    {
+      "path": "target/release/deps/workloads-d9383df526f9ed1e.exe",
+      "bytes": 2349056,
+      "sha256": "39230d36c7274c30da2b14e37d986336dd5ffa941ca9b2f29212e550094405b8"
+    }
+  ]
+}

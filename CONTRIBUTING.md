@@ -1,37 +1,35 @@
 # Contributing to EarControl
 
-EarControl is a Windows desktop app. Native development requires Windows 10/11 x64, PowerShell 7 (`pwsh`), Bun 1.3.10, stable Rust with the MSVC target, Microsoft C++ Build Tools with the Windows SDK, and WebView2 Runtime.
+Native development requires Windows 10/11 x64, PowerShell 7, stable Rust with the MSVC target and Microsoft C++ Build Tools with the Windows SDK. NSIS 3 is needed only for installers. The app has no Bun, Node, WebView2 or .NET dependency.
 
-## Start
-
-Run commands from the repository root:
+From the repository root:
 
 ```powershell
-bun run setup
-bun run dev
+./scripts/windows.ps1 -Task Setup
+./scripts/windows.ps1 -Task Dev
 ```
 
-| Command | Purpose |
+| Task | Purpose |
 | --- | --- |
-| `bun run dev` | Run the native Tauri app with frontend hot reload |
-| `bun run dev:web` | Browser UI preview at `http://127.0.0.1:1420` |
-| `bun run check` | TypeScript, production frontend build, and locked Rust check |
-| `bun run test` | Frontend tests, production frontend build, and Rust unit tests |
-| `bun run test:windows` | Interactive native input/media smoke test |
-| `bun run build` | Portable executable and ZIP |
-| `bun run package` | Portable files plus the per-user NSIS installer |
-| `bun run release:verify` | Version agreement and release SHA-256 checksums |
+| `Setup` | Fetch locked Cargo dependencies |
+| `Dev` | Run the native Rust app |
+| `Check` | Check rustfmt and Clippy with warnings denied |
+| `Test` | Run unit, settings compatibility and headless UI tests |
+| `WindowsTest` | Run the interactive native input/media smoke test |
+| `Build` | Build the release executable and portable ZIP |
+| `Package` | Build portable files and a per-user NSIS installer |
+| `Bench` | Benchmark core workloads and headless UI layout/tessellation |
 
-Browser preview has separate local settings and cannot capture headphones or send native shortcuts. Only `setup` and `dev:web` are intended to work outside Windows. Run `bun run setup` after dependency changes; dependency ownership stays in `desktop/package.json` and its lockfile.
+`./scripts/verify-release.ps1` checks the version and release checksums. Use `-PortableOnly` after `Build`. `scripts/benchmark.ps1` measures release process trees against a supplied baseline. The optional root Bun commands route to these same scripts; Bun is only needed for editing the historical launch video.
 
-The root package is a command router, not another application package. Windows tasks live in `scripts/windows.ps1`. PowerShell handles the native toolchain and ZIP packaging; there is one implementation shared by local commands and CI. The script also recognizes an optional local Rust toolchain under `.tools/`.
+The script recognizes an optional local Rust toolchain under `.tools/`. For NSIS, use an installed copy, set `NSIS_HOME`, or place it in `.tools/nsis`. Cargo's lockfile is at the repository root. Update the application version in `desktop/Cargo.toml` and regenerate the lockfile with Cargo.
 
-## Changes and checks
+The committed `.cargo/config.toml` selects the static C runtime for Windows x64. Local and CI builds use that same setting. Do not override it with `RUSTFLAGS` when packaging. Release verification rejects executable imports of Visual C++ runtime DLLs. `Test` also runs the standalone PowerShell checks in `scripts/test-release-verification.ps1`.
 
-Keep session state and draft validation in `App.tsx`, reusable presentation in `components/`, and native behavior in the Rust modules described in [architecture](docs/architecture.md). Preserve keyboard operation, focus return, readable contrast, and both themes. Check the normal 1160×780 window and minimum 860×620 window for interface changes.
+Keep native input safeguards in the existing engine/runtime modules. Preserve profile compatibility, draft validation, keyboard operation, accessible labels and both themes. Check the main window at 1160×780 and 860×620, and the practice window at its minimum size. The [architecture](docs/architecture.md) describes the source boundaries.
 
-Run `bun run test` before proposing a change. Native input changes also need `bun run test:windows` on an unlocked desktop. Keep its isolated window focused; it sends actual keys to that window. Record hardware tests separately from simulated input. Do not paste personal window titles, text macros, or profile exports into issues without reviewing them.
+Run `Check` and `Test` before proposing changes. Input changes also need `WindowsTest` on an unlocked desktop. It focuses an isolated native window and sends actual keys to that window. Record physical headphone testing separately. Do not publish personal window titles, text macros or profile exports.
 
-The Windows workflow runs on pushes and pull requests. Include the relevant checks and screenshots in the PR. Release binaries, build caches, installed packages, and local toolchains stay outside Git.
+For an empty Monitor, run `cargo run --locked --example media_diagnostics` while Monitor is active. This read-only check counts EarControl sessions and reports whether Windows selects one. It does not send media commands or display another app's media titles. `WindowsTest` also exercises the real app runtime in Monitor mode, checks activity/repaint, and verifies that monitoring never injects shortcuts.
 
-See [releasing](docs/releasing.md) for versioning and packaging, and [the demo source](media/launch/README.md) for video edits.
+See [releasing](docs/releasing.md), the [port plan](docs/rust-port-plan.md) and [benchmarks](docs/benchmarks.md). Release binaries, caches and local tools stay outside Git.

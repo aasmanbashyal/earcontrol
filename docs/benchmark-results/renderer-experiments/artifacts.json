@@ -1,0 +1,47 @@
+[
+  {
+    "file": "size-profile-s.exe",
+    "bytes": 2424832,
+    "sha256": "33817926dbb7f3f387439dfbf867d858e7b16ac3d0ca80d8c68cb271b006c7eb"
+  },
+  {
+    "file": "size-profile-z.exe",
+    "bytes": 2121728,
+    "sha256": "6311e90b98d0b97b814b9ebb45593e7b657b5808173a340757725de92cf0a30b"
+  },
+  {
+    "file": "hybrid-control-s.exe",
+    "bytes": 2193920,
+    "sha256": "059a5828795beac3d3f4cd33f4f0e4c37f77c2b87e89cd859502cfe5a4ae6781"
+  },
+  {
+    "file": "hybrid-app-opt3.exe",
+    "bytes": 2647040,
+    "sha256": "c52ca05f15b2057a2bdc119af988cccd6bdf04ca1281fdc3cbf564520eef989b"
+  },
+  {
+    "file": "workloads-opt-s.exe",
+    "bytes": 2349056,
+    "sha256": "1bb0ab0baf8948a145fe3b37554a4d888620acdd65c89c90420a274f9b729a06"
+  },
+  {
+    "file": "workloads-opt-z.exe",
+    "bytes": 2006528,
+    "sha256": "19ccb16b07d2678a5cf4cbe24498fd072920548afc16dd8045bcbfe5a02116c9"
+  },
+  {
+    "file": "workloads-hybrid.exe",
+    "bytes": 2963968,
+    "sha256": "3827cf2158efbc22c7cb96f30ed30bdd85eec73ae00008ad5f7a3b3345752f86"
+  },
+  {
+    "file": "earcontrol-d3d11-probe.exe",
+    "bytes": 124416,
+    "sha256": "3d72ae7ef8d2e450d7606fb027f7870f71c2fe0069a5f5923b856672a9fd2953"
+  },
+  {
+    "file": "earcontrol-wgpu-probe.exe",
+    "bytes": 3469824,
+    "sha256": "17eaac1643d066f630716bea70894b639b3c31e41690ce1d7a7f68afe259a06e"
+  }
+]

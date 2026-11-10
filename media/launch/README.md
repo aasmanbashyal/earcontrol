@@ -1,5 +1,7 @@
 # EarControl product demo
 
+This is the historical 2.x interface. The 3.x application is native Rust and no longer provides the browser preview used to capture these assets. The saved composition remains editable; recapture UI assets from the native app for a new film.
+
 The finished film is a 20.5-second, 1920×1080 illustrated walkthrough with music and restrained sound effects. It shows actual mappings, the macro editor, and a keyboard-driven practice-slide advance. The [poster](../../docs/media/demo-poster.jpg) is also the film's first frame.
 
 https://github.com/user-attachments/assets/53dbceda-f306-42fe-b55f-9e94693331cb

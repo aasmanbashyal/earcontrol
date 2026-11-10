@@ -1,0 +1,14 @@
+[
+  {
+    "file": ".tools/vendor-control-z.exe",
+    "exe_bytes": 2121728,
+    "exe_zip_bytes": 1125188,
+    "sha256": "db94917348001d0ed988de4ac689fc8ec83d7297313ed18ead3ab13045f8f641"
+  },
+  {
+    "file": ".tools/vendor-experiment-z.exe",
+    "exe_bytes": 1905152,
+    "exe_zip_bytes": 1021412,
+    "sha256": "f92e96911712c580d74cc1c188d1b7c4f8f176ad2c8f298f3c8d45c21aaa8333"
+  }
+]

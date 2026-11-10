@@ -1,33 +1,37 @@
 name: Windows checks and package
-
 on:
   push:
     branches: ['**']
   pull_request:
   workflow_dispatch:
-
 permissions:
   contents: read
-
 jobs:
   windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: '1.3.10'
       - uses: dtolnay/rust-toolchain@stable
-      - name: Install locked frontend dependencies
-        run: bun run setup
+        with:
+          components: rustfmt, clippy
+      - name: Format and lint
+        shell: pwsh
+        run: ./scripts/windows.ps1 -Task Check
       - name: Test
         shell: pwsh
-        run: bun run test
-      - name: Build portable app and installer
+        run: ./scripts/windows.ps1 -Task Test
+      - name: Install NSIS
+        run: choco install nsis --no-progress -y
+      - name: Package
         shell: pwsh
-        run: bun run package
+        run: ./scripts/windows.ps1 -Task Package
       - name: Verify release artifacts
-        run: bun run release:verify
+        shell: pwsh
+        run: ./scripts/verify-release.ps1
+      - name: Test clean install and 2.1.2 migration
+        shell: pwsh
+        timeout-minutes: 5
+        run: ./scripts/test-installer.ps1 -DisposableVm
       - uses: actions/upload-artifact@v4
         with:
           name: EarControl-windows-x64

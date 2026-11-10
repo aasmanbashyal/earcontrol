@@ -1,5 +1,9 @@
 # EarControl user guide
 
+## Moving from 2.x to 3.0
+
+If you installed EarControl 2.x, close it and uninstall it in Windows Settings. Leave **Delete app data** unchecked, then run the 3.0 installer. EarControl opens your saved profiles from the same settings folder. If you use the portable ZIP, close the older copy before opening 3.0.
+
 ## First use
 
 1. Pair headphones directly to the PC in Windows Bluetooth settings. The Devices screen opens these settings and lists paired classic Bluetooth audio devices.
@@ -21,7 +25,7 @@ Google Slides and PowerPoint start with these mappings:
 | Previous track | Left | Previous slide |
 | Stop playback | Escape | Exit presentation |
 
-The Everyday profile supplies general navigation shortcuts. The menu beside the profile selector creates, duplicates, renames, and removes profiles. Edits remain drafts until saved. Starting control or testing saves pending changes first; editing while controlling or testing cancels the active session.
+The Everyday profile supplies general navigation shortcuts. **Manage profiles** below the profile selector creates, duplicates, renames, and removes profiles. Edits remain drafts until saved. Starting control or testing saves pending changes first; editing while controlling or testing cancels the active session.
 
 **Buttons** lets you enable each command and choose its action. **Macros** edits its name and ordered steps:
 
@@ -33,13 +37,19 @@ Reorder with the up/down controls. **Test macro** gives three seconds to switch 
 
 Supported keys include letters, digits, F1-F24, arrows, Escape, Enter, Space, Tab, Backspace, Delete, Insert, Home, End, PageUp, and PageDown, with Ctrl, Alt, Shift, or Win. `None` is a no-op. Limits are 32 steps, 30 seconds of total delay, and 2,000 text characters. Text is sent in small Unicode-safe batches with cancellation checks between batches.
 
-Settings includes light/dark/system themes, media-key capture, repeat delay, and JSON import/export. Repeat delay can be switched off; duplicate reports from Windows are still filtered. Import validates the complete document before replacing settings. Every imported profile must include all seven commands; unused commands can be disabled. Profiles are stored in the Windows app configuration directory for `app.earcontrol.desktop`, in `profiles.json`. Activity stays in memory; targets and active sessions are never persisted.
+Settings includes light, dark, and system themes, an accent color, media-key capture, repeat delay, and JSON import/export. Choose an accent under **Appearance**, then click **Save changes** to keep it. Repeat delay can be switched off; duplicate reports from Windows are still filtered. Import validates the complete document before replacing settings. Every imported profile must include all seven commands; unused commands can be disabled. Profiles are stored in the Windows app configuration directory for `app.earcontrol.desktop`, in `profiles.json`. Activity stays in memory; targets and active sessions are never persisted.
 
 ## Headphone support
 
 Capture uses Windows System Media Transport Controls and optional standard media keys. It is not tied to Redmi or another brand. Headphones sending supported play/pause, next, previous, or stop commands can be mapped. Optional volume up/down/mute mappings require Windows keyboard media-key events and are disabled by default.
 
-Windows selects which media session receives headphone commands. Pause competing media apps and select EarControl in Windows media controls if the monitor stays empty. A browser video can take over that session. EarControl does not play audio or use the microphone.
+Windows selects which media session receives headphone commands. While Monitor or control is active, the status line shows Windows' routing choice until EarControl receives a media command or keyboard media key. Button check and Activity show the commands EarControl received.
+
+If no command appears, choose **Retry input**. It restarts capture, refreshes the media-key hook and routing check, and keeps the selected target and current mode. It cancels any running macro. If Windows still selects another app, pause that player and select EarControl in Windows media controls. Retry cannot force Windows to select a session. A browser video can take over that session. EarControl does not play audio or use the microphone.
+
+**Input details** in Button check separates Windows media-session reports from keyboard media-key reports. The counts reset when capture starts or retries and include reports before duplicate filtering. They do not identify a physical headphone. Clearing Activity removes its entries but keeps those counts until capture restarts.
+
+The native port shares the older app's single-instance lock, so launching a second copy brings the existing app forward. Close any earlier test build before testing the new executable. Monitor's Button check and Activity show received commands; a connected device entry alone does not confirm that Windows routed a gesture to EarControl.
 
 EarControl recovers held-button tracking when Windows reports a device change or wakes from sleep, and when capture restarts. A device that disconnects without releasing its media key no longer leaves that button suppressed in the next session. Duplicate filtering uses the time Windows input was captured, so a delayed worker cannot turn two reports of one press into two actions.
 

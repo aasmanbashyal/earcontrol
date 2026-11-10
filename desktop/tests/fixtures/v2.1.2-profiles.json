@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "activeProfileId": "migration-check",
+  "profiles": [
+    {
+      "id": "migration-check",
+      "name": "Migration check",
+      "description": "A saved 2.1.2 profile with a shortcut and a text macro.",
+      "accent": "#a64619",
+      "mappings": [
+        { "id": "play", "trigger": "play_pause", "name": "Next slide", "enabled": true, "steps": [{ "kind": "key", "keys": "Right" }] },
+        { "id": "next", "trigger": "next", "name": "Insert text", "enabled": true, "steps": [{ "kind": "text", "text": "नमस्ते" }] },
+        { "id": "previous", "trigger": "previous", "name": "Previous slide", "enabled": true, "steps": [{ "kind": "key", "keys": "Left" }] },
+        { "id": "stop", "trigger": "stop", "name": "End presentation", "enabled": true, "steps": [{ "kind": "key", "keys": "Escape" }] },
+        { "id": "up", "trigger": "volume_up", "name": "Volume up", "enabled": false, "steps": [] },
+        { "id": "down", "trigger": "volume_down", "name": "Volume down", "enabled": false, "steps": [] },
+        { "id": "mute", "trigger": "mute", "name": "Mute", "enabled": false, "steps": [] }
+      ]
+    }
+  ],
+  "keyboardFallback": true,
+  "cooldownMs": 420,
+  "theme": "dark"
+}

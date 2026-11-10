@@ -1,26 +1,22 @@
 # Releasing EarControl
 
-## Prepare
+1. Update `desktop/Cargo.toml`, regenerate `Cargo.lock`, and update the changelog and portable README.
+2. Run `./scripts/windows.ps1 -Task Check`, `-Task Test`, and `-Task WindowsTest` on Windows.
+3. Close the release executable, then run `./scripts/windows.ps1 -Task Package` and `./scripts/verify-release.ps1`.
+4. Inspect both windows, themes, minimum size, portable ZIP and installer. Record checks actually performed. Simulated input does not establish physical headphone compatibility.
 
-1. Update the version together in `desktop/package.json`, `desktop/src-tauri/Cargo.toml`, `desktop/src-tauri/Cargo.lock`, and `desktop/src-tauri/tauri.conf.json`. Update the portable README and changelog. The UI reads its fallback version from package metadata.
-2. Run `bun run setup`, `bun run test`, and the interactive `bun run test:windows` on Windows.
-3. Close the release executable if it is running, then run `bun run package` and `bun run release:verify`.
-4. Inspect the portable launch, light/dark themes, minimum window size, ZIP contents, and installer. Record checks actually performed. Native smoke tests do not establish compatibility with every headphone model.
+`dist/` contains a versioned portable folder, ZIP, per-user NSIS installer and SHA-256 manifest. The folder contains `EarControl.exe`, README, MIT license and third-party font notices. The manifest covers the executable inside that folder, ZIP and installer. `Build` creates only portable files; verify those with `-PortableOnly`.
 
-`dist/` contains a versioned portable folder, ZIP, per-user NSIS installer, and SHA-256 manifest. The portable folder contains the executable, a self-contained README, and the MIT license. The installer also places the MIT license beside the installed executable. The manifest includes the executable inside that folder plus the ZIP and installer. Verify the executable entry after extracting the ZIP.
+PowerShell in `scripts/windows.ps1` is the shared local/CI entry point. It uses locked Cargo builds and validates version agreement. NSIS is a build tool only. The installer requires no WebView2 download and runs without administrator privileges. Uninstall removes application files and keeps profiles in the existing roaming configuration directory.
 
-PowerShell is the Windows packaging implementation in `scripts/windows.ps1`. It validates versions, uses locked Rust builds, creates a fresh portable folder, copies the exact versioned installer, and writes checksums. Root Bun commands and CI call this same script.
+Windows x64 builds link the C runtime statically using `.cargo/config.toml`, so they do not require a separately installed Visual C++ Redistributable. The verifier checks the executable's x64 GUI headers, version resources, and ordinary and RVA-based delay imports for Visual C++ runtime DLLs. This checks declared imports, not arbitrary DLLs loaded at runtime. System Windows DLLs and the OpenGL driver remain required. The same verifier runs in local release checks and both packaging workflows.
 
-## Draft on GitHub
+The hosted Windows workflow runs `./scripts/test-installer.ps1 -DisposableVm` on a fresh VM after packaging. It tests a clean install and uninstall, then downloads the published 2.1.2 installer and checks its SHA-256. It installs 2.1.2 into a custom directory, writes a version-2 profile fixture, and checks that the 3.0 installer refuses to replace the 2.x registration. After uninstalling 2.1.2 and installing 3.0, it verifies the Start menu target, installed files, and profile hash. It checks the profile hash again after uninstalling 3.0. The Rust test suite loads the same fixture through the app's settings loader.
 
-After configuring the repository remote and committing the reviewed source, a pushed `vX.Y.Z` tag triggers `.github/workflows/release.yml`. It rejects a tag that differs from the package version, runs tests, builds and verifies artifacts, then creates a **draft** GitHub Release. It does not publish the draft.
+To repeat installer QA locally, use a disposable Windows VM or Windows Sandbox. A custom `/D` directory still changes the current user's Start menu and uninstall registry entries. For an interactive check, confirm that 3.0 opens the saved profile after uninstalling 2.1.2 with **Delete app data** unchecked, and that reinstalling 3.x while its executable is running asks you to close it.
 
-The release job alone has `contents: write`. Ordinary push/PR checks have read-only repository permissions. Inspect the draft's notes, assets, and checksums before publishing. The workflow is intended for a new release tag; if a draft already exists, update it deliberately rather than rerunning `gh release create`.
+A pushed `vX.Y.Z` tag triggers `.github/workflows/release.yml`. It checks the tag, tests, packages, verifies and creates a draft GitHub Release for review. Ordinary push/PR jobs have read-only repository permissions. Local packaging does not push a branch, tag or release.
 
-No remote, tag, release, or public URL is created by local packaging. Configure repository-specific download links and CI badges only after the remote exists.
+Binaries are unsigned. Require a green hosted Windows build for the release revision and a passing installer and migration check before publication. Existing version-2 JSON profiles require no conversion.
 
-## Distribution status
-
-Current binaries are unsigned. Code signing, an installed-package upgrade test, and hosted CI execution are separate release checks. WebView2 is required; the installer checks for the runtime. Portable updates replace the application files while profiles remain in the app configuration directory.
-
-Application source is licensed under [MIT](../LICENSE). Demo music and third-party assets retain their separate licenses in [media credits](../media/launch/CREDITS.md).
+Application source is [MIT licensed](../LICENSE). Historical demo assets retain their separate licenses in the media credits.

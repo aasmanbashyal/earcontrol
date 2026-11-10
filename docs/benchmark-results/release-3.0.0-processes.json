@@ -1,0 +1,185 @@
+{
+  "measured_at_utc": "2026-11-10T11:04:00.5990924Z",
+  "os": "Microsoft Windows 11 Home",
+  "os_version": "10.0.26300",
+  "cpu": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics     ",
+  "logical_processors": 16,
+  "ram_bytes": 33515835392,
+  "graphics": [
+    {
+      "Name": "AMD Radeon 780M Graphics",
+      "DriverVersion": "31.0.14084.3001"
+    }
+  ],
+  "method": "One unmeasured warmup per app; interleaved launch order; visible top-level window proxy, not first painted frame; descendant-tree memory; summed working sets can double-count shared pages. Idle CPU is the delta for processes present at both snapshots; children born and exited between snapshots are not observed.",
+  "settings": "Both apps read the same existing configuration; candidate uses an isolated copy. Baseline only reads its original file.",
+  "runs": 7,
+  "settle_seconds": 5,
+  "idle_seconds": 6,
+  "baseline": {
+    "bytes": 3417088,
+    "version": "2.1.2",
+    "sha256": "208246441e4b3f345b9729a83ab73d8cd423ca534a6c2d407bf9ee36682adce9"
+  },
+  "candidate": {
+    "bytes": 2387456,
+    "version": "3.0.0",
+    "sha256": "8cc7600b556cb476c205c0b63ded9e270830749321b652ae9d70b34aa3fcc84d"
+  },
+  "samples": [
+    {
+      "app": "published_2_1_2",
+      "round": 1,
+      "window_ms": 28.524,
+      "processes": 7,
+      "private_bytes": 226136064.0,
+      "working_set_bytes": 415309824.0,
+      "idle_cpu_ms": 16.0,
+      "idle_observation_ms": 6162.489,
+      "idle_cpu_one_core_pct": 0.2596
+    },
+    {
+      "app": "candidate_3_0_0",
+      "round": 1,
+      "window_ms": 41.695,
+      "processes": 1,
+      "private_bytes": 102359040.0,
+      "working_set_bytes": 109539328.0,
+      "idle_cpu_ms": 0.0,
+      "idle_observation_ms": 6118.584,
+      "idle_cpu_one_core_pct": 0.0
+    },
+    {
+      "app": "candidate_3_0_0",
+      "round": 2,
+      "window_ms": 37.243,
+      "processes": 1,
+      "private_bytes": 102043648.0,
+      "working_set_bytes": 109301760.0,
+      "idle_cpu_ms": 0.0,
+      "idle_observation_ms": 6125.747,
+      "idle_cpu_one_core_pct": 0.0
+    },
+    {
+      "app": "published_2_1_2",
+      "round": 2,
+      "window_ms": 46.665,
+      "processes": 7,
+      "private_bytes": 221679616.0,
+      "working_set_bytes": 406482944.0,
+      "idle_cpu_ms": 31.0,
+      "idle_observation_ms": 6177.3,
+      "idle_cpu_one_core_pct": 0.5018
+    },
+    {
+      "app": "published_2_1_2",
+      "round": 3,
+      "window_ms": 67.541,
+      "processes": 7,
+      "private_bytes": 246206464.0,
+      "working_set_bytes": 424308736.0,
+      "idle_cpu_ms": 78.0,
+      "idle_observation_ms": 6164.983,
+      "idle_cpu_one_core_pct": 1.2652
+    },
+    {
+      "app": "candidate_3_0_0",
+      "round": 3,
+      "window_ms": 40.021,
+      "processes": 1,
+      "private_bytes": 103206912.0,
+      "working_set_bytes": 108986368.0,
+      "idle_cpu_ms": 0.0,
+      "idle_observation_ms": 6139.632,
+      "idle_cpu_one_core_pct": 0.0
+    },
+    {
+      "app": "candidate_3_0_0",
+      "round": 4,
+      "window_ms": 30.808,
+      "processes": 1,
+      "private_bytes": 102465536.0,
+      "working_set_bytes": 108957696.0,
+      "idle_cpu_ms": 0.0,
+      "idle_observation_ms": 6126.143,
+      "idle_cpu_one_core_pct": 0.0
+    },
+    {
+      "app": "published_2_1_2",
+      "round": 4,
+      "window_ms": 40.528,
+      "processes": 7,
+      "private_bytes": 240578560.0,
+      "working_set_bytes": 429641728.0,
+      "idle_cpu_ms": 0.0,
+      "idle_observation_ms": 6152.469,
+      "idle_cpu_one_core_pct": 0.0
+    },
+    {
+      "app": "published_2_1_2",
+      "round": 5,
+      "window_ms": 32.79,
+      "processes": 7,
+      "private_bytes": 235810816.0,
+      "working_set_bytes": 426557440.0,
+      "idle_cpu_ms": 31.0,
+      "idle_observation_ms": 6167.373,
+      "idle_cpu_one_core_pct": 0.5026
+    },
+    {
+      "app": "candidate_3_0_0",
+      "round": 5,
+      "window_ms": 40.043,
+      "processes": 1,
+      "private_bytes": 102019072.0,
+      "working_set_bytes": 108670976.0,
+      "idle_cpu_ms": 0.0,
+      "idle_observation_ms": 6105.62,
+      "idle_cpu_one_core_pct": 0.0
+    },
+    {
+      "app": "candidate_3_0_0",
+      "round": 6,
+      "window_ms": 46.953,
+      "processes": 1,
+      "private_bytes": 102027264.0,
+      "working_set_bytes": 108740608.0,
+      "idle_cpu_ms": 0.0,
+      "idle_observation_ms": 6118.443,
+      "idle_cpu_one_core_pct": 0.0
+    },
+    {
+      "app": "published_2_1_2",
+      "round": 6,
+      "window_ms": 53.942,
+      "processes": 7,
+      "private_bytes": 232128512.0,
+      "working_set_bytes": 408248320.0,
+      "idle_cpu_ms": 63.0,
+      "idle_observation_ms": 6150.943,
+      "idle_cpu_one_core_pct": 1.0242
+    },
+    {
+      "app": "published_2_1_2",
+      "round": 7,
+      "window_ms": 51.428,
+      "processes": 7,
+      "private_bytes": 238772224.0,
+      "working_set_bytes": 426409984.0,
+      "idle_cpu_ms": 31.0,
+      "idle_observation_ms": 6136.317,
+      "idle_cpu_one_core_pct": 0.5052
+    },
+    {
+      "app": "candidate_3_0_0",
+      "round": 7,
+      "window_ms": 38.964,
+      "processes": 1,
+      "private_bytes": 101892096.0,
+      "working_set_bytes": 113504256.0,
+      "idle_cpu_ms": 0.0,
+      "idle_observation_ms": 6142.029,
+      "idle_cpu_one_core_pct": 0.0
+    }
+  ]
+}

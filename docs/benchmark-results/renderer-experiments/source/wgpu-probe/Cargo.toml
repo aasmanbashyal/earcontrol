@@ -1,0 +1,21 @@
+[workspace]
+
+[package]
+name = "earcontrol-wgpu-probe"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+eframe = { version = "=0.33.3", default-features = false, features = ["wgpu", "accesskit"] }
+wgpu = { version = "=27.0.1", default-features = false, features = ["std", "dx12", "wgsl"] }
+
+[patch.crates-io]
+eframe = { path = "../../vendor/eframe" }
+egui-winit = { path = "../../vendor/egui-winit" }
+
+[profile.release]
+opt-level = "s"
+codegen-units = 1
+lto = true
+strip = true
+panic = "abort"

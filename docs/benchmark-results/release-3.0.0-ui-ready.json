@@ -1,0 +1,66 @@
+{
+  "measured_at_utc": "2026-11-10T11:12:44.2811604Z",
+  "method": "Five paired launches with alternating order and a warmup per app. Time to an enabled Practice deck button exposed by UI Automation. Includes UI Automation query overhead.",
+  "samples": [
+    {
+      "app": "published_2_1_2",
+      "round": 1,
+      "button_ms": 581.018,
+      "sha256": "208246441e4b3f345b9729a83ab73d8cd423ca534a6c2d407bf9ee36682adce9"
+    },
+    {
+      "app": "candidate_3_0_0",
+      "round": 1,
+      "button_ms": 285.13,
+      "sha256": "9ed9fc2df3440b310225999874ac837ff44ca20334bff41bcf6d128891cd7fe3"
+    },
+    {
+      "app": "candidate_3_0_0",
+      "round": 2,
+      "button_ms": 271.119,
+      "sha256": "9ed9fc2df3440b310225999874ac837ff44ca20334bff41bcf6d128891cd7fe3"
+    },
+    {
+      "app": "published_2_1_2",
+      "round": 2,
+      "button_ms": 581.694,
+      "sha256": "208246441e4b3f345b9729a83ab73d8cd423ca534a6c2d407bf9ee36682adce9"
+    },
+    {
+      "app": "published_2_1_2",
+      "round": 3,
+      "button_ms": 609.405,
+      "sha256": "208246441e4b3f345b9729a83ab73d8cd423ca534a6c2d407bf9ee36682adce9"
+    },
+    {
+      "app": "candidate_3_0_0",
+      "round": 3,
+      "button_ms": 275.015,
+      "sha256": "9ed9fc2df3440b310225999874ac837ff44ca20334bff41bcf6d128891cd7fe3"
+    },
+    {
+      "app": "candidate_3_0_0",
+      "round": 4,
+      "button_ms": 240.111,
+      "sha256": "9ed9fc2df3440b310225999874ac837ff44ca20334bff41bcf6d128891cd7fe3"
+    },
+    {
+      "app": "published_2_1_2",
+      "round": 4,
+      "button_ms": 579.75,
+      "sha256": "208246441e4b3f345b9729a83ab73d8cd423ca534a6c2d407bf9ee36682adce9"
+    },
+    {
+      "app": "published_2_1_2",
+      "round": 5,
+      "button_ms": 643.844,
+      "sha256": "208246441e4b3f345b9729a83ab73d8cd423ca534a6c2d407bf9ee36682adce9"
+    },
+    {
+      "app": "candidate_3_0_0",
+      "round": 5,
+      "button_ms": 298.791,
+      "sha256": "9ed9fc2df3440b310225999874ac837ff44ca20334bff41bcf6d128891cd7fe3"
+    }
+  ]
+}
