@@ -75,6 +75,36 @@ pub fn font(size: f32, bold: bool) -> FontId {
     }
 }
 
+pub fn singleline(value: &mut dyn egui::TextBuffer) -> egui::TextEdit<'_> {
+    egui::TextEdit::singleline(value)
+        .margin(egui::Margin::symmetric(10, 8))
+        .min_size(egui::vec2(0.0, 36.0))
+        .vertical_align(egui::Align::Center)
+}
+
+pub fn multiline(value: &mut dyn egui::TextBuffer) -> egui::TextEdit<'_> {
+    egui::TextEdit::multiline(value).margin(egui::Margin::symmetric(10, 8))
+}
+
+pub fn slider(ui: &mut Ui, slider: egui::Slider<'_>) -> Response {
+    let p = Palette::get(ui.ctx());
+    ui.scope(|ui| {
+        ui.spacing_mut().slider_rail_height = 6.0;
+        let visuals = ui.visuals_mut();
+        visuals.selection.bg_fill = p.text;
+        for widget in [
+            &mut visuals.widgets.inactive,
+            &mut visuals.widgets.hovered,
+            &mut visuals.widgets.active,
+        ] {
+            widget.bg_fill = p.input_line;
+            widget.fg_stroke = Stroke::new(2.0_f32, p.text);
+        }
+        ui.add(slider.trailing_fill(true))
+    })
+    .inner
+}
+
 #[derive(Clone, Copy)]
 pub enum Icon {
     Buttons,
@@ -141,9 +171,9 @@ pub fn draw_icon(painter: &Painter, rect: Rect, icon: Icon, color: Color32) {
     match icon {
         Icon::Buttons => {
             for (y, x) in [(5., 8.), (12., 16.), (19., 10.)] {
-                line((3., y), (21., y));
-                painter.circle_filled(p(x, y), 2.2, Palette::for_dark(color.r() > 180).surface);
-                painter.circle_stroke(p(x, y), 2.2, stroke);
+                line((3., y), (x - 3., y));
+                line((x + 3., y), (21., y));
+                painter.circle_stroke(p(x, y), rect.width() * 3.0 / 24.0, stroke);
             }
         }
         Icon::Macros => {
@@ -172,11 +202,18 @@ pub fn draw_icon(painter: &Painter, rect: Rect, icon: Icon, color: Color32) {
             (22., 12.),
         ]),
         Icon::Settings => {
-            for (x, y) in [(5., 7.), (12., 16.), (19., 9.)] {
-                line((x, 3.), (x, 21.));
-                painter.circle_filled(p(x, y), 2.3, Palette::for_dark(color.r() > 180).surface);
-                painter.circle_stroke(p(x, y), 2.3, stroke);
+            let mut outline = Vec::with_capacity(32);
+            for tooth in 0..8 {
+                let angle = tooth as f32 * std::f32::consts::FRAC_PI_4;
+                for (offset, radius) in [(-0.32, 7.5), (-0.17, 10.0), (0.17, 10.0), (0.32, 7.5)] {
+                    outline.push(p(
+                        12.0 + radius * (angle + offset).cos(),
+                        12.0 + radius * (angle + offset).sin(),
+                    ));
+                }
             }
+            painter.add(egui::Shape::closed_line(outline, stroke));
+            painter.circle_stroke(rect.center(), rect.width() * 3.0 / 24.0, stroke);
         }
         Icon::Monitor => {
             box_(2., 3., 20., 14., 2.);

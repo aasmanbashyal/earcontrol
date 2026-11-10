@@ -8,7 +8,7 @@ use std::{
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
         mpsc::{self, Receiver, Sender, SyncSender},
-        Arc,
+        Arc, Mutex, OnceLock,
     },
     thread::{self, JoinHandle},
     time::{Duration, Instant},
@@ -17,6 +17,10 @@ use windows::{
     core::{factory, w, BOOL, HSTRING},
     Foundation::TypedEventHandler,
     Media::{
+        Control::{
+            CurrentSessionChangedEventArgs, GlobalSystemMediaTransportControlsSessionManager,
+            SessionsChangedEventArgs,
+        },
         MediaPlaybackStatus, MediaPlaybackType, SystemMediaTransportControls,
         SystemMediaTransportControlsButton, SystemMediaTransportControlsButtonPressedEventArgs,
     },
@@ -44,10 +48,10 @@ use windows::{
                 EnumWindows, GetForegroundWindow, GetMessageW, GetWindowTextLengthW,
                 GetWindowTextW, GetWindowThreadProcessId, IsWindow, IsWindowVisible, PeekMessageW,
                 PostThreadMessageW, RegisterClassW, SetWindowsHookExW, TranslateMessage,
-                UnhookWindowsHookEx, UnregisterClassW, DBT_DEVNODES_CHANGED, KBDLLHOOKSTRUCT,
-                LLKHF_INJECTED, MSG, PBT_APMRESUMEAUTOMATIC, PM_NOREMOVE, WH_KEYBOARD_LL,
-                WINDOW_EX_STYLE, WM_APP, WM_DEVICECHANGE, WM_KEYDOWN, WM_KEYUP, WM_POWERBROADCAST,
-                WM_SYSKEYDOWN, WM_SYSKEYUP, WNDCLASSW, WS_OVERLAPPED,
+                UnhookWindowsHookEx, UnregisterClassW, DBT_DEVNODES_CHANGED, HHOOK,
+                KBDLLHOOKSTRUCT, LLKHF_INJECTED, MSG, PBT_APMRESUMEAUTOMATIC, PM_NOREMOVE,
+                WH_KEYBOARD_LL, WINDOW_EX_STYLE, WM_APP, WM_DEVICECHANGE, WM_KEYDOWN, WM_KEYUP,
+                WM_POWERBROADCAST, WM_SYSKEYDOWN, WM_SYSKEYUP, WNDCLASSW, WS_OVERLAPPED,
             },
         },
     },
@@ -56,12 +60,46 @@ use windows::{
 const WAKE_INPUT_THREAD: u32 = WM_APP + 0x51;
 type CommandCallback = Arc<dyn Fn(String, String, u64, Instant) + Send + Sync>;
 type ConsumeCallback = Arc<dyn Fn(&str) -> bool + Send + Sync>;
+type HealthCallback = Arc<dyn Fn() + Send + Sync>;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum CaptureRoute {
+    #[default]
+    Checking,
+    EarControl,
+    OtherApp,
+    None,
+    Unavailable,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct CaptureHealth {
+    pub route: CaptureRoute,
+    pub keyboard_fallback: bool,
+    pub input_thread_alive: bool,
+    // Windows reports accepted by this capture generation, before duplicate
+    // filtering. They do not identify the physical device that sent a command.
+    pub media_commands: u64,
+    pub keyboard_commands: u64,
+}
+
+#[derive(Default)]
+struct ReceivedCounts {
+    generation: u64,
+    media: u64,
+    keyboard: u64,
+}
 
 #[derive(Default)]
 struct SessionState {
+    input_alive: AtomicBool,
     listening: AtomicBool,
     keyboard_fallback: AtomicBool,
     generation: AtomicU64,
+    route: Mutex<CaptureRoute>,
+    counts: Mutex<ReceivedCounts>,
+    route_refresh: OnceLock<SyncSender<()>>,
+    health_changed: OnceLock<HealthCallback>,
 }
 
 impl SessionState {
@@ -69,6 +107,217 @@ impl SessionState {
         self.listening.store(false, Ordering::SeqCst);
         self.keyboard_fallback.store(false, Ordering::SeqCst);
         self.generation.fetch_add(1, Ordering::SeqCst);
+    }
+
+    fn refresh_route(&self) {
+        if let Some(refresh) = self.route_refresh.get() {
+            let _ = refresh.try_send(());
+        }
+    }
+
+    fn notify_health(&self) {
+        if let Some(changed) = self.health_changed.get() {
+            changed();
+        }
+    }
+
+    fn set_route(&self, route: CaptureRoute) {
+        let mut current = self.route.lock().unwrap();
+        if *current != route {
+            *current = route;
+            drop(current);
+            self.notify_health();
+        }
+    }
+
+    fn record_report(&self, event: &CapturedCommand) -> bool {
+        let mut counts = self.counts.lock().unwrap();
+        if !self.listening.load(Ordering::SeqCst)
+            || event.generation != self.generation.load(Ordering::SeqCst)
+        {
+            return false;
+        }
+        if counts.generation != event.generation {
+            *counts = ReceivedCounts {
+                generation: event.generation,
+                ..Default::default()
+            };
+        }
+        match event.source {
+            "Windows media session" => counts.media = counts.media.saturating_add(1),
+            "Keyboard media key" => counts.keyboard = counts.keyboard.saturating_add(1),
+            _ => {}
+        }
+        true
+    }
+
+    fn health(&self, input_thread_alive: bool) -> CaptureHealth {
+        let counts = self.counts.lock().unwrap();
+        let current = counts.generation == self.generation.load(Ordering::SeqCst);
+        CaptureHealth {
+            route: *self.route.lock().unwrap(),
+            keyboard_fallback: self.keyboard_fallback.load(Ordering::SeqCst),
+            input_thread_alive,
+            media_commands: if current { counts.media } else { 0 },
+            keyboard_commands: if current { counts.keyboard } else { 0 },
+        }
+    }
+}
+
+fn source_is_this_process(source: &str, executable: &std::path::Path) -> bool {
+    let path = executable.to_string_lossy();
+    let filename = executable.file_name().map(|name| name.to_string_lossy());
+    source.eq_ignore_ascii_case(&path)
+        || filename.is_some_and(|filename| source.eq_ignore_ascii_case(&filename))
+}
+
+struct RouteSubscription {
+    manager: GlobalSystemMediaTransportControlsSessionManager,
+    current_token: i64,
+    sessions_token: i64,
+}
+
+impl RouteSubscription {
+    fn new(refresh: &SyncSender<()>) -> Result<Self, String> {
+        let operation = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+            .map_err(|error| error.to_string())?;
+        let (sender, receiver) = mpsc::sync_channel(1);
+        operation
+            .when(move |result| {
+                let _ = sender.send(result);
+            })
+            .map_err(|error| error.to_string())?;
+        let manager = match receiver.recv_timeout(Duration::from_secs(3)) {
+            Ok(result) => result.map_err(|error| error.to_string())?,
+            Err(error) => {
+                let _ = operation.Cancel();
+                return Err(error.to_string());
+            }
+        };
+        let current_refresh = refresh.clone();
+        let current_token = manager
+            .CurrentSessionChanged(&TypedEventHandler::<
+                GlobalSystemMediaTransportControlsSessionManager,
+                CurrentSessionChangedEventArgs,
+            >::new(move |_, _| {
+                let _ = current_refresh.try_send(());
+                Ok(())
+            }))
+            .map_err(|error| error.to_string())?;
+        let sessions_refresh = refresh.clone();
+        let sessions_token = match manager.SessionsChanged(&TypedEventHandler::<
+            GlobalSystemMediaTransportControlsSessionManager,
+            SessionsChangedEventArgs,
+        >::new(move |_, _| {
+            let _ = sessions_refresh.try_send(());
+            Ok(())
+        })) {
+            Ok(token) => token,
+            Err(error) => {
+                let _ = manager.RemoveCurrentSessionChanged(current_token);
+                return Err(error.to_string());
+            }
+        };
+        Ok(Self {
+            manager,
+            current_token,
+            sessions_token,
+        })
+    }
+
+    fn route(&self, executable: &std::path::Path) -> CaptureRoute {
+        match self.manager.GetCurrentSession() {
+            Ok(session) => match session.SourceAppUserModelId() {
+                Ok(source) if source_is_this_process(&source.to_string_lossy(), executable) => {
+                    CaptureRoute::EarControl
+                }
+                Ok(_) => CaptureRoute::OtherApp,
+                Err(_) => CaptureRoute::Unavailable,
+            },
+            // The Windows API returns success with a null interface when there
+            // is no current session. windows-rs represents that as Error::empty.
+            Err(error) if error.code() == windows::core::Error::empty().code() => {
+                CaptureRoute::None
+            }
+            Err(_) => CaptureRoute::Unavailable,
+        }
+    }
+}
+
+impl Drop for RouteSubscription {
+    fn drop(&mut self) {
+        let _ = self.manager.RemoveCurrentSessionChanged(self.current_token);
+        let _ = self.manager.RemoveSessionsChanged(self.sessions_token);
+    }
+}
+
+struct RouteWatcher {
+    stop: Arc<AtomicBool>,
+    refresh: SyncSender<()>,
+    thread: Option<JoinHandle<()>>,
+}
+
+impl RouteWatcher {
+    fn new(session: Arc<SessionState>) -> Result<Self, String> {
+        let (refresh, requests) = mpsc::sync_channel(1);
+        let _ = session.route_refresh.set(refresh.clone());
+        let stop = Arc::new(AtomicBool::new(false));
+        let stopping = Arc::clone(&stop);
+        let notify = refresh.clone();
+        let thread = thread::Builder::new()
+            .name("earcontrol-media-routing".into())
+            .spawn(move || {
+                if unsafe { RoInitialize(RO_INIT_MULTITHREADED) }.is_err() {
+                    session.set_route(CaptureRoute::Unavailable);
+                    return;
+                }
+                let executable = std::env::current_exe().unwrap_or_default();
+                let mut subscription: Option<RouteSubscription> = None;
+                loop {
+                    if stopping.load(Ordering::Acquire) {
+                        break;
+                    }
+                    if subscription.is_none() {
+                        subscription = RouteSubscription::new(&notify).ok();
+                    }
+                    let route = subscription
+                        .as_ref()
+                        .map_or(CaptureRoute::Unavailable, |observer| {
+                            observer.route(&executable)
+                        });
+                    session.set_route(route);
+                    if route == CaptureRoute::Unavailable {
+                        subscription = None;
+                    }
+                    // Windows events and explicit Start/Stop/reconnect requests wake
+                    // this worker. There is no polling timer or playback command.
+                    if requests.recv().is_err() {
+                        break;
+                    }
+                }
+                drop(subscription);
+                unsafe {
+                    RoUninitialize();
+                }
+            })
+            .map_err(|error| error.to_string())?;
+        Ok(Self {
+            stop,
+            refresh,
+            thread: Some(thread),
+        })
+    }
+}
+
+impl Drop for RouteWatcher {
+    fn drop(&mut self) {
+        self.stop.store(true, Ordering::Release);
+        let _ = self.refresh.try_send(());
+        if let Some(thread) = self.thread.take() {
+            if thread.thread().id() != thread::current().id() {
+                let _ = thread.join();
+            }
+        }
     }
 }
 
@@ -83,6 +332,8 @@ enum InputRequest {
     Start(bool, Sender<Result<(), String>>),
     Stop(Sender<Result<(), String>>),
     Quit,
+    #[cfg(test)]
+    RemoveHookForTest(Sender<Result<(), String>>),
 }
 
 struct HookState {
@@ -209,6 +460,7 @@ unsafe extern "system" fn device_notification_proc(
             KEYBOARD_HOOK.with(|slot| {
                 if let Some(state) = slot.borrow_mut().as_mut() {
                     state.pressed.recover();
+                    state.session.refresh_route();
                 }
             });
         }));
@@ -223,6 +475,7 @@ pub struct NativeInput {
     thread_id: u32,
     session: Arc<SessionState>,
     native_thread: Option<JoinHandle<()>>,
+    route_watcher: Option<RouteWatcher>,
 }
 
 impl NativeInput {
@@ -230,11 +483,13 @@ impl NativeInput {
         hwnd: isize,
         on_command: CommandCallback,
         should_consume: ConsumeCallback,
+        health_changed: HealthCallback,
     ) -> Result<Self, String> {
         if hwnd == 0 {
             return Err("The EarControl window has not been created yet.".into());
         }
         let session = Arc::new(SessionState::default());
+        let _ = session.health_changed.set(health_changed);
         let (requests, receiver) = mpsc::channel();
         let (events, event_receiver) = mpsc::sync_channel::<CapturedCommand>(64);
         let (ready_sender, ready_receiver) = mpsc::sync_channel(1);
@@ -271,9 +526,7 @@ impl NativeInput {
             .name("earcontrol-media-events".into())
             .spawn(move || {
                 while let Ok(event) = event_receiver.recv() {
-                    if callback_session.listening.load(Ordering::SeqCst)
-                        && event.generation == callback_session.generation.load(Ordering::SeqCst)
-                    {
+                    if callback_session.record_report(&event) {
                         let _ = catch_unwind(AssertUnwindSafe(|| {
                             on_command(
                                 event.trigger.into(),
@@ -282,6 +535,7 @@ impl NativeInput {
                                 event.captured_at,
                             );
                         }));
+                        callback_session.notify_health();
                     }
                 }
             })
@@ -292,11 +546,19 @@ impl NativeInput {
                 }
                 error.to_string()
             })?;
+        let route_watcher = match RouteWatcher::new(Arc::clone(&session)) {
+            Ok(watcher) => Some(watcher),
+            Err(_) => {
+                session.set_route(CaptureRoute::Unavailable);
+                None
+            }
+        };
         Ok(Self {
             requests,
             thread_id,
             session,
             native_thread: Some(native_thread),
+            route_watcher,
         })
     }
 
@@ -317,6 +579,16 @@ impl NativeInput {
     /// This also closes the race where the callback worker pauses across Stop/start.
     pub fn generation(&self) -> u64 {
         self.session.generation.load(Ordering::SeqCst)
+    }
+
+    pub fn capture_health(&self) -> CaptureHealth {
+        self.session.health(
+            self.session.input_alive.load(Ordering::SeqCst)
+                && self
+                    .native_thread
+                    .as_ref()
+                    .is_some_and(|thread| !thread.is_finished()),
+        )
     }
 
     fn request(
@@ -349,8 +621,14 @@ impl Drop for NativeInput {
             let _ = PostThreadMessageW(self.thread_id, WAKE_INPUT_THREAD, WPARAM(0), LPARAM(0));
         }
         if let Some(thread) = self.native_thread.take() {
-            let _ = thread.join();
+            // An in-flight predicate can briefly own the last AppState Arc.
+            // If its drop reaches here on the input thread, let the callback
+            // return and the already-queued Quit perform same-thread cleanup.
+            if thread.thread().id() != thread::current().id() {
+                let _ = thread.join();
+            }
         }
+        self.route_watcher.take();
     }
 }
 
@@ -426,6 +704,7 @@ fn run_input_thread(
             let _ = PeekMessageW(&mut message, None, 0, 0, PM_NOREMOVE);
         }
         let thread_id = unsafe { GetCurrentThreadId() };
+        session.input_alive.store(true, Ordering::SeqCst);
         if ready.send(Ok(thread_id)).is_err() {
             // Initialization caller timed out; never leave an unowned hook running.
             let _ = controls.RemoveButtonPressed(token);
@@ -446,10 +725,8 @@ fn run_input_thread(
                     match request {
                         InputRequest::Start(fallback, response) => {
                             session.invalidate();
-                            let hook_result = if fallback && hook.is_none() {
-                                unsafe { GetModuleHandleW(None) }.and_then(|module| unsafe {
-                                    SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard_callback), Some(HINSTANCE(module.0)), 0)
-                                }).map(|registered| { hook = Some(registered); })
+                            let hook_result = if fallback {
+                                replace_keyboard_hook(&mut hook)
                                     .map_err(|error| format!("Could not register media keys. Turn off keyboard fallback and retry. {error}"))
                             } else {
                                 Ok(())
@@ -465,14 +742,30 @@ fn run_input_thread(
                                 session.invalidate();
                                 let _ = disable_controls(&controls);
                             }
+                            session.refresh_route();
+                            session.notify_health();
                         }
                         InputRequest::Stop(response) => {
                             session.invalidate();
                             let _ = response.send(disable_controls(&controls));
+                            session.refresh_route();
+                            session.notify_health();
                         }
                         InputRequest::Quit => {
                             quit = true;
                             break;
+                        }
+                        #[cfg(test)]
+                        InputRequest::RemoveHookForTest(response) => {
+                            let result = hook
+                                .ok_or_else(|| "No keyboard hook".to_owned())
+                                .and_then(|hook| {
+                                    unsafe { UnhookWindowsHookEx(hook) }
+                                        .map_err(|error| error.to_string())
+                                });
+                            // Keep the stale handle, exactly as Windows does when
+                            // it silently removes a timed-out low-level hook.
+                            let _ = response.send(result);
                         }
                     }
                 }
@@ -503,9 +796,35 @@ fn run_input_thread(
             slot.borrow_mut().take();
         });
     }
+    session.input_alive.store(false, Ordering::SeqCst);
+    session.notify_health();
     unsafe {
         RoUninitialize();
     }
+}
+
+fn replace_keyboard_hook(hook: &mut Option<HHOOK>) -> windows::core::Result<()> {
+    // Windows can silently remove timed-out hooks while our old HHOOK remains
+    // non-null. An explicit Start always creates a fresh hook. Register first
+    // to avoid a gap; keep PressedKeys so consumed downs still consume their up.
+    let module = unsafe { GetModuleHandleW(None) }?;
+    let registered = unsafe {
+        SetWindowsHookExW(
+            WH_KEYBOARD_LL,
+            Some(keyboard_callback),
+            Some(HINSTANCE(module.0)),
+            0,
+        )
+    }?;
+    if let Some(previous) = hook.replace(registered) {
+        // An invalid old handle may have been reused for this new registration.
+        if previous != registered {
+            unsafe {
+                let _ = UnhookWindowsHookEx(previous);
+            }
+        }
+    }
+    Ok(())
 }
 
 fn enable_controls(controls: &SystemMediaTransportControls) -> Result<(), String> {
@@ -958,6 +1277,48 @@ mod tests {
     }
 
     #[test]
+    fn routing_identity_matches_only_this_executable() {
+        let executable = std::path::Path::new(r"C:\Apps\EarControl.exe");
+        assert!(source_is_this_process("earcontrol.exe", executable));
+        assert!(source_is_this_process(
+            r"c:\apps\EARCONTROL.EXE",
+            executable
+        ));
+        assert!(!source_is_this_process("OtherEarControl.exe", executable));
+        assert!(!source_is_this_process(
+            r"C:\Other\EarControl.exe",
+            executable
+        ));
+        assert!(!source_is_this_process("", executable));
+    }
+
+    #[test]
+    fn capture_counters_exclude_stopped_and_previous_generations() {
+        let session = SessionState::default();
+        session.listening.store(true, Ordering::SeqCst);
+        let mut event = CapturedCommand {
+            generation: 0,
+            trigger: "next",
+            source: "Windows media session",
+            captured_at: Instant::now(),
+        };
+        assert!(session.record_report(&event));
+        event.source = "Keyboard media key";
+        assert!(session.record_report(&event));
+        let health = session.health(true);
+        assert_eq!((health.media_commands, health.keyboard_commands), (1, 1));
+        session.invalidate();
+        assert!(!session.record_report(&event));
+        session.listening.store(true, Ordering::SeqCst);
+        assert!(!session.record_report(&event));
+        assert_eq!(session.health(true).keyboard_commands, 0);
+        event.generation = session.generation.load(Ordering::SeqCst);
+        assert!(session.record_report(&event));
+        let health = session.health(true);
+        assert_eq!((health.media_commands, health.keyboard_commands), (0, 1));
+    }
+
+    #[test]
     fn held_media_keys_repeat_only_after_release() {
         let mut pressed = PressedKeys::default();
         assert_eq!(pressed.repeat(0xB3, 1), None);
@@ -1159,9 +1520,27 @@ mod tests {
                 let _ = sender.send((trigger, source, generation));
             }),
             Arc::new(|_| false),
+            Arc::new(|| {}),
         )
         .expect("Initialize Windows media capture");
         native.start(true).expect("Start media capture");
+        // Reproduce a stale non-null HHOOK without waiting for a real timeout.
+        // A second successful removal after Start proves the hook was rebuilt.
+        let (removed, confirmation) = mpsc::channel();
+        native
+            .request(InputRequest::RemoveHookForTest(removed), confirmation)
+            .unwrap();
+        native
+            .start(true)
+            .expect("Recover a silently removed keyboard hook");
+        let (removed, confirmation) = mpsc::channel();
+        native
+            .request(InputRequest::RemoveHookForTest(removed), confirmation)
+            .unwrap();
+        native.start(true).unwrap();
+        println!(
+            "PASS: Start recreates a stale keyboard hook without clearing paired-release state."
+        );
         let active_generation = native.generation();
         let interop: ISystemMediaTransportControlsInterop =
             factory::<SystemMediaTransportControls, _>().unwrap();
@@ -1279,7 +1658,7 @@ mod tests {
             });
         runtime.initialize(target.handle);
         assert!(runtime.warning().is_none(), "{:?}", runtime.warning());
-        runtime.set_mode("monitor", None).unwrap();
+        runtime.set_mode("monitor", Some(target.clone())).unwrap();
         assert_eq!(runtime.status().mode, "monitor");
         let keys_before_monitor = TEST_KEYS.with(|keys| keys.borrow().len());
         let wakes_before_command = repaint_count.load(Ordering::Relaxed);
@@ -1299,6 +1678,15 @@ mod tests {
         }
         assert!(repaint_count.load(Ordering::Relaxed) > wakes_before_command);
         TEST_KEYS.with(|keys| assert_eq!(keys.borrow().len(), keys_before_monitor));
+        assert_eq!(runtime.capture_health().media_commands, 1);
+        runtime.retry_capture().unwrap();
+        assert_eq!(runtime.status().mode, "monitor");
+        assert_eq!(
+            runtime.status().target.as_ref().unwrap().handle,
+            target.handle
+        );
+        assert_eq!(runtime.capture_health().media_commands, 0);
+        assert!(runtime.capture_health().keyboard_fallback);
         runtime.stop().unwrap();
         assert_eq!(runtime.status().mode, "idle");
         runtime.clear_events();
@@ -1324,6 +1712,15 @@ mod tests {
             );
             pump_for(Duration::from_millis(20));
         }
+        runtime.stop().unwrap();
+        runtime.set_mode("control", Some(target.clone())).unwrap();
+        runtime.retry_capture().unwrap();
+        assert_eq!(runtime.status().mode, "control");
+        assert_eq!(
+            runtime.status().target.as_ref().unwrap().handle,
+            target.handle
+        );
+        assert_eq!(runtime.capture_health().media_commands, 0);
         runtime.stop().unwrap();
         println!("PASS: application Monitor records real SMTC Next and Play/Pause, wakes the UI, sends no keys, and survives Stop/restart. Physical earbuds were not tested.");
     }

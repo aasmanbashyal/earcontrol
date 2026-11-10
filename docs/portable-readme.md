@@ -22,7 +22,7 @@ Settings includes light/dark/system themes, media-key capture, repeat delay, and
 
 ## Compatibility
 
-Windows chooses which media session receives headphone commands. Pause competing media apps and select EarControl in Windows media controls if monitoring stays empty. EarControl does not play audio or use the microphone.
+Windows chooses which media session receives headphone commands. Monitor shows the selected route above the main screen. If no command appears, use **Retry input** to restart capture while keeping the selected mode and target. This cancels any running macro. If another media app stays selected, pause it and select EarControl in Windows media controls. Retry cannot force that selection. EarControl does not play audio or use the microphone.
 
 Commands do not identify the headphone, earbud side, or tap count. Devices share one active profile and per-command cooldown. The paired-device list is informational, not an input filter. LE-only devices may be absent from the list even when their commands work. Physical compatibility depends on the headphones and Windows driver.
 

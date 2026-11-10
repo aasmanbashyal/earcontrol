@@ -1,6 +1,6 @@
 # Rust optimization results
 
-Benchmarks were completed before optimization. The completed Rust port, commit `aedea25`, is the baseline for this report. The changes remain on `feat/rust-native-ui`; no release has been published.
+Benchmarks were completed before optimization. The completed Rust port, commit `aedea25`, is the baseline for this report, and commit `82d1af2` is the measured optimized source. Later capture-diagnostic and UI fixes have different artifact hashes and have not been rebenchmarked here. The changes remain on `feat/rust-native-ui`; no release has been published.
 
 The requested threefold improvement was achieved for shortcut parsing, duplicate filtering and CPU-only Unicode macro dispatch. It was not achieved for executable size, memory, startup, profile validation or UI rendering. There is no measured threefold improvement in the whole application or physical earbud latency.
 

@@ -2,6 +2,9 @@
 
 ## 3.0.0, native Rust port
 
+- Added live Windows media-routing status, per-session input diagnostics and Retry input. Restarting capture now refreshes the keyboard hook, including hooks Windows silently removed after a timeout.
+- Kept Button check feedback scoped to the current capture session, including after retry or a late macro cancellation.
+- Gave Settings a distinct gear icon, increased repeat-delay slider contrast, and enlarged text fields with consistent padding.
 - Ported both application windows to egui/eframe, including profile editing, macro recording and testing, devices, activity, settings and practice controls.
 - Removed React, TypeScript, Vite, Tauri and WebView2 from the application build and runtime.
 - Preserved the version-2 JSON settings format, storage location and Windows input safeguards.

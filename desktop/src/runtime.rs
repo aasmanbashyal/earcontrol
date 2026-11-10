@@ -19,10 +19,12 @@ struct Session {
     mode: String,
     target: Option<TargetWindow>,
     generation: u64,
+    capture_event_start: u64,
+    latest_capture_event_id: Option<u64>,
 }
 
 pub struct AppState {
-    repaint: Box<dyn Fn() + Send + Sync>,
+    repaint: Arc<dyn Fn() + Send + Sync>,
     events: Mutex<VecDeque<ActivityEvent>>,
     settings: Mutex<Settings>,
     session: Mutex<Session>,
@@ -41,7 +43,7 @@ impl AppState {
             mode: session.mode.clone(),
             target: session.target.clone(),
             running_macro: self.busy.load(Ordering::Acquire),
-            media_ready: self.native.lock().unwrap().is_some(),
+            media_ready: self.capture_health().input_thread_alive,
             message: match session.mode.as_str() {
                 "control" => "Keep the chosen window and its presentation tab active.",
                 "monitor" => "Listening for headphone commands. No shortcuts are sent.",
@@ -56,6 +58,28 @@ impl AppState {
     }
 
     fn event(&self, trigger: &str, source: &str, outcome: &str, detail: impl Into<String>) {
+        self.publish_event(trigger, source, outcome, detail.into(), None);
+    }
+
+    fn capture_event(
+        &self,
+        trigger: &str,
+        source: &str,
+        outcome: &str,
+        detail: impl Into<String>,
+        generation: u64,
+    ) {
+        self.publish_event(trigger, source, outcome, detail.into(), Some(generation));
+    }
+
+    fn publish_event(
+        &self,
+        trigger: &str,
+        source: &str,
+        outcome: &str,
+        detail: String,
+        generation: Option<u64>,
+    ) {
         let event = ActivityEvent {
             id: self.event_id.fetch_add(1, Ordering::Relaxed),
             timestamp: SystemTime::now()
@@ -65,12 +89,22 @@ impl AppState {
             trigger: trigger.into(),
             source: source.into(),
             outcome: outcome.into(),
-            detail: detail.into(),
+            detail,
         };
+        let event_id = event.id;
         let mut events = self.events.lock().unwrap();
         events.push_front(event);
         events.truncate(250);
         drop(events);
+        if let Some(generation) = generation {
+            let mut session = self.session.lock().unwrap();
+            if session.generation == generation
+                && event_id >= session.capture_event_start
+                && ["monitor", "control"].contains(&session.mode.as_str())
+            {
+                session.latest_capture_event_id = Some(event_id);
+            }
+        }
         (self.repaint)();
     }
 
@@ -152,11 +186,12 @@ impl AppState {
             return;
         }
         if session.mode == "monitor" {
-            self.event(
+            self.capture_event(
                 &trigger,
                 &source,
                 "detected",
                 "Command received. No shortcut sent.",
+                session.generation,
             );
             return;
         }
@@ -173,30 +208,33 @@ impl AppState {
             .cloned();
         let Some(mapping) = mapping.filter(|mapping| mapping.enabled && !mapping.steps.is_empty())
         else {
-            self.event(
+            self.capture_event(
                 &trigger,
                 &source,
                 "disabled",
                 "This button has no enabled action.",
+                session.generation,
             );
             return;
         };
         let Some(target) = session.target else { return };
         if !native::is_foreground(&target) {
-            self.event(
+            self.capture_event(
                 &trigger,
                 &source,
                 "skipped",
                 "The chosen window is not active.",
+                session.generation,
             );
             return;
         }
         if native::modifiers_held() {
-            self.event(
+            self.capture_event(
                 &trigger,
                 &source,
                 "skipped",
                 "Release Ctrl, Alt, Shift, and Windows first.",
+                session.generation,
             );
             return;
         }
@@ -205,7 +243,13 @@ impl AppState {
             .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
             .is_err()
         {
-            self.event(&trigger, &source, "skipped", "A macro is still running.");
+            self.capture_event(
+                &trigger,
+                &source,
+                "skipped",
+                "A macro is still running.",
+                session.generation,
+            );
             return;
         }
         self.launch_macro(mapping, target, session.generation, source, 0);
@@ -270,7 +314,7 @@ impl AppState {
                 )
             })();
             match result {
-                Ok(()) => state.event(
+                Ok(()) => state.capture_event(
                     &mapping.trigger,
                     &source,
                     "executed",
@@ -280,8 +324,11 @@ impl AppState {
                         mapping.steps.len(),
                         if mapping.steps.len() == 1 { "" } else { "s" }
                     ),
+                    generation,
                 ),
-                Err(message) => state.event(&mapping.trigger, &source, "cancelled", message),
+                Err(message) => {
+                    state.capture_event(&mapping.trigger, &source, "cancelled", message, generation)
+                }
             }
             state.busy.store(false, Ordering::Release);
             state.publish_status();
@@ -293,7 +340,7 @@ impl AppState {
     pub fn new(path: PathBuf, repaint: impl Fn() + Send + Sync + 'static) -> Arc<Self> {
         let (config, warning) = settings::load_settings(&path);
         Arc::new(Self {
-            repaint: Box::new(repaint),
+            repaint: Arc::new(repaint),
             events: Mutex::new(VecDeque::new()),
             settings: Mutex::new(config),
             session: Mutex::new(Session {
@@ -321,7 +368,10 @@ impl AppState {
             weak.upgrade()
                 .is_some_and(|state| state.should_consume(trigger))
         });
-        match native::NativeInput::new(hwnd, callback, predicate) {
+        // A joined native/route worker must not temporarily become the last
+        // AppState owner, which would make its destructor join its own thread.
+        let health_changed = Arc::clone(&self.repaint);
+        match native::NativeInput::new(hwnd, callback, predicate, health_changed) {
             Ok(input) => *self.native.lock().unwrap() = Some(input),
             Err(error) => {
                 *self.warning.lock().unwrap() =
@@ -336,6 +386,23 @@ impl AppState {
     pub fn warning(&self) -> Option<String> {
         self.warning.lock().unwrap().clone()
     }
+    pub fn capture_health(&self) -> native::CaptureHealth {
+        self.native.lock().unwrap().as_ref().map_or_else(
+            || native::CaptureHealth {
+                route: native::CaptureRoute::Unavailable,
+                ..Default::default()
+            },
+            native::NativeInput::capture_health,
+        )
+    }
+
+    pub fn retry_capture(&self) -> Result<(), String> {
+        let session = self.session.lock().unwrap().clone();
+        if !["monitor", "control"].contains(&session.mode.as_str()) {
+            return Err("Start Monitor or control before retrying input.".into());
+        }
+        self.set_mode(&session.mode, session.target)
+    }
     pub fn events(&self) -> Vec<ActivityEvent> {
         self.events.lock().unwrap().iter().cloned().collect()
     }
@@ -346,6 +413,21 @@ impl AppState {
             .unwrap()
             .iter()
             .find(|event| crate::model::TRIGGERS.contains(&event.trigger.as_str()))
+            .cloned()
+    }
+    pub fn latest_capture_command_event(&self) -> Option<ActivityEvent> {
+        let (start, id) = {
+            let session = self.session.lock().unwrap();
+            (
+                session.capture_event_start,
+                session.latest_capture_event_id?,
+            )
+        };
+        self.events
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|event| event.id == id && event.id >= start)
             .cloned()
     }
     pub fn clear_events(&self) {
@@ -378,16 +460,27 @@ impl AppState {
             return Err("Choose an open target window first.".into());
         }
         self.stop()?;
-        self.native
-            .lock()
-            .unwrap()
-            .as_ref()
-            .ok_or("Windows media controls are unavailable. Restart EarControl.")?
-            .start(settings.keyboard_fallback)?;
+        let capture_event_start = self.event_id.load(Ordering::Relaxed);
         {
             let mut session = self.session.lock().unwrap();
             session.mode = mode.into();
             session.target = target;
+            session.capture_event_start = capture_event_start;
+            session.latest_capture_event_id = None;
+        }
+        // Establish the runtime generation before native enable can produce its
+        // first callback. A startup failure rolls back to idle and invalidates
+        // queued reports, so no partially started control session remains.
+        let started = self
+            .native
+            .lock()
+            .unwrap()
+            .as_ref()
+            .ok_or_else(|| "Windows media controls are unavailable. Restart EarControl.".to_owned())
+            .and_then(|input| input.start(settings.keyboard_fallback));
+        if let Err(error) = started {
+            let _ = self.stop();
+            return Err(error);
         }
         self.event(
             "session",
@@ -447,6 +540,70 @@ impl AppState {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn retry_does_not_start_capture_from_idle() {
+        let dir = tempfile::tempdir().unwrap();
+        let runtime = AppState::new(dir.path().join("profiles.json"), || {});
+        assert!(runtime.retry_capture().is_err());
+        assert_eq!(runtime.status().mode, "idle");
+        assert!(!runtime.capture_health().input_thread_alive);
+        assert_eq!(
+            runtime.capture_health().route,
+            native::CaptureRoute::Unavailable
+        );
+    }
+
+    #[test]
+    fn failed_capture_start_rolls_back_runtime_mode() {
+        let dir = tempfile::tempdir().unwrap();
+        let runtime = AppState::new(dir.path().join("profiles.json"), || {});
+        assert!(runtime.set_mode("monitor", None).is_err());
+        assert_eq!(runtime.status().mode, "idle");
+        assert!(runtime.latest_capture_command_event().is_none());
+        assert!(!runtime.capture_health().input_thread_alive);
+    }
+
+    #[test]
+    fn current_capture_preview_excludes_old_history_and_late_old_macro_outcomes() {
+        let dir = tempfile::tempdir().unwrap();
+        let runtime = AppState::new(dir.path().join("profiles.json"), || {});
+        runtime.event("previous", "test", "detected", "old history");
+        {
+            let mut session = runtime.session.lock().unwrap();
+            session.mode = "monitor".into();
+            session.generation = 1;
+            session.capture_event_start = runtime.event_id.load(Ordering::Relaxed);
+        }
+        assert!(runtime.latest_capture_command_event().is_none());
+        runtime.capture_event("next", "test", "detected", "current report", 1);
+        assert_eq!(
+            runtime.latest_capture_command_event().unwrap().trigger,
+            "next"
+        );
+        {
+            let mut session = runtime.session.lock().unwrap();
+            session.generation = 2;
+            session.capture_event_start = runtime.event_id.load(Ordering::Relaxed);
+            session.latest_capture_event_id = None;
+        }
+        runtime.capture_event(
+            "next",
+            "test",
+            "cancelled",
+            "old macro finished after retry",
+            1,
+        );
+        assert!(runtime.latest_capture_command_event().is_none());
+        assert_eq!(runtime.latest_command_event().unwrap().outcome, "cancelled");
+        runtime.capture_event("play_pause", "test", "detected", "new report", 2);
+        assert_eq!(
+            runtime.latest_capture_command_event().unwrap().trigger,
+            "play_pause"
+        );
+        runtime.clear_events();
+        assert!(runtime.latest_capture_command_event().is_none());
+    }
     #[test]
     fn activity_is_bounded_and_newest_first() {
         let dir = tempfile::tempdir().unwrap();

@@ -39,7 +39,11 @@ Settings includes light/dark/system themes, media-key capture, repeat delay, and
 
 Capture uses Windows System Media Transport Controls and optional standard media keys. It is not tied to Redmi or another brand. Headphones sending supported play/pause, next, previous, or stop commands can be mapped. Optional volume up/down/mute mappings require Windows keyboard media-key events and are disabled by default.
 
-Windows selects which media session receives headphone commands. Pause competing media apps and select EarControl in Windows media controls if the monitor stays empty. A browser video can take over that session. EarControl does not play audio or use the microphone.
+Windows selects which media session receives headphone commands. While Monitor or control is active, the status line shows whether Windows selects EarControl, another media app, or no session. This routing check does not prove that a physical gesture has arrived; Button check and Activity provide that evidence.
+
+If no command appears, choose **Retry input**. It restarts capture, refreshes the media-key hook and routing check, and keeps the selected target and current mode. It cancels any running macro. If Windows still selects another app, pause that player and select EarControl in Windows media controls. Retry cannot force Windows to select a session. A browser video can take over that session. EarControl does not play audio or use the microphone.
+
+**Input details** in Button check separates Windows media-session reports from keyboard media-key reports. The counts reset when capture starts or retries and include reports before duplicate filtering. They do not identify a physical headphone. Clearing Activity removes its entries but keeps those counts until capture restarts.
 
 The native port shares the older app's single-instance lock, so launching a second copy brings the existing app forward. Close any earlier test build before testing the new executable. Monitor's Button check and Activity show received commands; a connected device entry alone does not confirm that Windows routed a gesture to EarControl.
 

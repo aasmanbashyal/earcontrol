@@ -45,6 +45,28 @@ const VIEWS: [(View, &str, &str); 5] = [
         "Appearance, input behavior, and backups.",
     ),
 ];
+fn capture_message(health: &native::CaptureHealth) -> (&'static str, bool) {
+    if !health.input_thread_alive {
+        return ("Windows input stopped. Restart EarControl.", true);
+    }
+    match health.route {
+        native::CaptureRoute::Checking => {
+            ("Checking which app Windows sends media buttons to…", false)
+        }
+        native::CaptureRoute::EarControl => {
+            ("Windows selects EarControl. Try an earbud gesture.", false)
+        }
+        native::CaptureRoute::OtherApp => (
+            "Windows selects another media app. Pause it, then retry input.",
+            true,
+        ),
+        native::CaptureRoute::None => ("Windows has no media session selected. Retry input.", true),
+        native::CaptureRoute::Unavailable => (
+            "Windows media routing could not be checked. Retry input.",
+            true,
+        ),
+    }
+}
 pub fn trigger_label(trigger: &str) -> &str {
     match trigger {
         "play_pause" => "Play / pause",
@@ -555,10 +577,8 @@ impl EarControl {
                                                 .selected_text(design::text(title, 12.0))
                                                 .show_ui(ui, |ui| {
                                                     ui.add(
-                                                        egui::TextEdit::singleline(
-                                                            &mut self.window_search,
-                                                        )
-                                                        .hint_text("Search windows"),
+                                                        design::singleline(&mut self.window_search)
+                                                            .hint_text("Search windows"),
                                                     );
                                                     ui.selectable_value(
                                                         &mut self.target,
@@ -688,19 +708,55 @@ impl EarControl {
                 );
             });
         egui::TopBottomPanel::top("session_help")
-            .exact_height(40.0)
+            .min_height(
+                if matches!(status.mode.as_str(), "monitor" | "control") && !status.running_macro {
+                    64.0
+                } else {
+                    40.0
+                },
+            )
+            .resizable(false)
             .frame(
                 egui::Frame::new()
                     .fill(palette.surface)
                     .inner_margin(egui::Margin::symmetric(if compact { 22 } else { 32 }, 10)),
             )
             .show(ctx, |ui| {
+                if matches!(status.mode.as_str(), "monitor" | "control") && !status.running_macro {
+                    let health = self.runtime.capture_health();
+                    let (message, warning) = capture_message(&health);
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        ui.add_enabled_ui(health.input_thread_alive, |ui| {
+                            if design::button(ui, "Retry input", Some(Icon::Refresh), false)
+                                .clicked()
+                            {
+                                let result = self.runtime.retry_capture();
+                                self.report(result);
+                            }
+                        });
+                        ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
+                            ui.label(design::text(message, 12.0).color(if warning {
+                                palette.danger
+                            } else {
+                                palette.text
+                            }));
+                            ui.label(
+                                design::text(
+                                    if status.mode == "monitor" {
+                                        "Monitor does not send shortcuts."
+                                    } else {
+                                        "Shortcuts run only while your target window is active."
+                                    },
+                                    11.0,
+                                )
+                                .color(palette.muted),
+                            );
+                        });
+                    });
+                    return;
+                }
                 let help = if status.running_macro {
                     "Switch to the target window. Stop cancels the test."
-                } else if status.mode == "monitor" {
-                    "Press a headphone button to see its command. Monitoring does not send keys."
-                } else if status.mode == "control" {
-                    "Switch to the target window. Actions run only while it is in front."
                 } else if self.target.is_none() {
                     "Choose an open window above, or open the practice deck to try your mappings."
                 } else {
@@ -1072,10 +1128,19 @@ impl EarControl {
 
                 ui.separator();
 
-                if let Some(event) = self.runtime.latest_command_event() {
+                let status = self.runtime.status();
+                let health = self.runtime.capture_health();
+                let active = matches!(status.mode.as_str(), "monitor" | "control");
+                let received = health.media_commands > 0 || health.keyboard_commands > 0;
+                let latest = if active {
+                    self.runtime.latest_capture_command_event()
+                } else {
+                    self.runtime.latest_command_event()
+                };
+                if let Some(event) = latest {
                     event_row(ui, &event, false);
                 } else {
-                    let monitoring = self.runtime.status().mode == "monitor";
+                    let monitoring = status.mode == "monitor";
 
                     ui.horizontal(|ui| {
                         let (rect, _) = ui.allocate_exact_size(egui::Vec2::splat(44.0), egui::Sense::hover());
@@ -1092,8 +1157,10 @@ impl EarControl {
                             ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
                                 ui.spacing_mut().item_spacing.y = 4.0;
                                 ui.label(design::strong(
-                                    if monitoring {
-                                        "Waiting for a headphone command"
+                                    if active && received {
+                                        "Windows input received"
+                                    } else if monitoring {
+                                        "No command received in this session yet"
                                     } else {
                                         "Check what your buttons send"
                                     },
@@ -1101,8 +1168,10 @@ impl EarControl {
                                 ));
                                 ui.label(
                                     design::text(
-                                        if monitoring {
-                                            "Press a headphone button. Its command will appear here."
+                                        if active && received {
+                                            "See Activity for the result. Earlier entries may have been cleared."
+                                        } else if monitoring {
+                                            "Try an earbud gesture. Check the input status above if nothing appears."
                                         } else {
                                             "Monitor listens for commands without sending shortcuts."
                                         },
@@ -1112,6 +1181,23 @@ impl EarControl {
                                 );
                             });
                         });
+                    });
+                }
+                if active {
+                    ui.add_space(4.0);
+                    ui.collapsing(design::text("Input details", 11.0).color(p.muted), |ui| {
+                        ui.label(design::text(format!(
+                            "Windows media reports: {} · Media-key reports: {}",
+                            health.media_commands, health.keyboard_commands,
+                        ), 11.0).color(p.muted));
+                        ui.label(design::text(
+                            if health.keyboard_fallback {
+                                "Keyboard media-key backup is on. Earbud gestures can use a different Windows path."
+                            } else {
+                                "Keyboard media-key backup is off. Enable it in Settings if your device sends keyboard media keys."
+                            }, 11.0,
+                        ).color(p.muted));
+                        ui.label(design::text("Windows chooses the media session. If another app stays selected, pause it and select EarControl in Windows media controls.", 11.0).color(p.muted));
                     });
                 }
             });
@@ -1219,7 +1305,7 @@ impl EarControl {
                             let label = ui.label(design::text("Action name", 12.0).color(p.muted));
                             let response = ui
                                 .add(
-                                    egui::TextEdit::singleline(&mut mapping.name)
+                                    design::singleline(&mut mapping.name)
                                         .id(egui::Id::new(("action_name", &mapping.id)))
                                         .desired_width(f32::INFINITY)
                                         .char_limit(80),
@@ -1298,10 +1384,10 @@ impl EarControl {
                                             MacroStep::Key { keys } => {
                                                 ui.horizontal_wrapped(|ui| {
                                                     let response = ui.add(
-                                                        egui::TextEdit::singleline(keys)
+                                                        design::singleline(keys)
                                                             .id(egui::Id::new(("step", &mapping.id, index)))
                                                             .font(egui::FontId::monospace(13.0))
-                                                            .desired_width((ui.available_width() - 110.0).max(90.0))
+                                                            .desired_width((ui.available_width() - 130.0).max(90.0))
                                                             .hint_text("For example, Ctrl+Shift+L"),
                                                     );
                                                     focus_review(&mut self.review_focus, ReviewFocus::Step(mapping.id.clone(), index), &response);
@@ -1339,7 +1425,7 @@ impl EarControl {
                                             }
                                             MacroStep::Text { text } => {
                                                 let response = ui.add(
-                                                    egui::TextEdit::multiline(text)
+                                                    design::multiline(text)
                                                         .id(egui::Id::new(("step", &mapping.id, index)))
                                                         .desired_rows(3)
                                                         .desired_width(f32::INFINITY)
@@ -1798,7 +1884,8 @@ impl EarControl {
             });
             ui.add_enabled_ui(repeat, |ui| {
                 let mut value = self.draft.cooldown_ms.max(80);
-                ui.add(
+                design::slider(
+                    ui,
                     egui::Slider::new(&mut value, 80..=2000)
                         .suffix(" ms")
                         .show_value(true),
@@ -1927,7 +2014,7 @@ impl EarControl {
                                             "",
                                         );
                                         let response = ui.add(
-                                            egui::TextEdit::singleline(&mut profile.name)
+                                            design::singleline(&mut profile.name)
                                                 .id(egui::Id::new(("profile_name", &profile.id)))
                                                 .char_limit(80)
                                                 .desired_width(240.0),
@@ -1945,7 +2032,7 @@ impl EarControl {
                                         }
                                     });
                                     let response = ui.add(
-                                        egui::TextEdit::singleline(&mut profile.description)
+                                        design::singleline(&mut profile.description)
                                             .id(egui::Id::new(("profile_description", &profile.id)))
                                             .char_limit(500)
                                             .desired_width(f32::INFINITY)
