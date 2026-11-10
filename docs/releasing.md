@@ -17,6 +17,8 @@ To repeat installer QA locally, use a disposable Windows VM or Windows Sandbox. 
 
 A pushed `vX.Y.Z` tag triggers `.github/workflows/release.yml`. It checks the tag, tests, packages, verifies and creates a draft GitHub Release for review. Ordinary push/PR jobs have read-only repository permissions. Local packaging does not push a branch, tag or release.
 
+The draft uses `docs/release-notes/X.Y.Z.md` when present and attaches any `docs/benchmark-results/release-X.Y.Z-*.json` datasets alongside the Windows downloads.
+
 Binaries are unsigned. Require a green hosted Windows build for the release revision and a passing installer and migration check before publication. Existing version-2 JSON profiles require no conversion.
 
 Application source is [MIT licensed](../LICENSE). Historical demo assets retain their separate licenses in the media credits.

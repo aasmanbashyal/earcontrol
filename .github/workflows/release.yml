@@ -31,16 +31,6 @@ jobs:
         shell: pwsh
         timeout-minutes: 5
         run: ./scripts/test-installer.ps1 -DisposableVm
-      - name: Prepare release notes
-        shell: pwsh
-        run: |
-          @'
-          Download the portable ZIP or per-user installer for Windows 10/11 x64.
-          The native Rust app needs no WebView2, Bun, Node, .NET or Rust runtime installation.
-          If 2.x is installed, uninstall it first with Delete app data unchecked. Then install 3.0. Your profiles carry over.
-          Binaries are unsigned. Verify downloads using the attached SHA-256 manifest.
-          See CHANGELOG.md and docs/user-guide.md in the tagged source for details.
-          '@ | Set-Content release-notes.txt
       - name: Create draft for review
         env:
           GH_TOKEN: ${{ github.token }}
@@ -48,4 +38,15 @@ jobs:
         run: |
           $version = [regex]::Match((Get-Content desktop/Cargo.toml -Raw), '(?m)^version = "([^"]+)"').Groups[1].Value
           $artifacts = @("dist/EarControl-$version-win-x64.zip", "dist/EarControl_$($version)_x64-setup.exe", "dist/EarControl-$version-SHA256SUMS.txt")
-          gh release create $env:GITHUB_REF_NAME @artifacts --verify-tag --draft --title "EarControl $version" --notes-file release-notes.txt
+          $artifacts += @(Get-ChildItem -LiteralPath docs/benchmark-results -Filter "release-$version-*.json" -File | Select-Object -ExpandProperty FullName)
+          $notes = "docs/release-notes/$version.md"
+          if (!(Test-Path -LiteralPath $notes -PathType Leaf)) {
+            $notes = 'release-notes.txt'
+            @'
+          Download the portable ZIP or per-user installer for Windows 10/11 x64.
+          If 2.x is installed, uninstall it first with Delete app data unchecked to keep your profiles.
+          Binaries are unsigned. Verify downloads using the attached SHA-256 manifest.
+          See CHANGELOG.md and docs/user-guide.md in the tagged source for details.
+          '@ | Set-Content -LiteralPath $notes -Encoding utf8
+          }
+          gh release create $env:GITHUB_REF_NAME @artifacts --verify-tag --draft --title "EarControl $version" --notes-file $notes
