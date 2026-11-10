@@ -19,10 +19,15 @@ pub fn execute_macro(
             MacroStep::Key { keys } => send_keys(&parse_shortcut(keys)?)?,
             MacroStep::Delay { ms } => wait(*ms)?,
             MacroStep::Text { text } => {
-                let characters: Vec<_> = text.chars().collect();
-                for chunk in characters.chunks(32) {
+                let mut remaining = text.as_str();
+                while !remaining.is_empty() {
+                    let end = remaining
+                        .char_indices()
+                        .nth(32)
+                        .map_or(remaining.len(), |(offset, _)| offset);
                     check_target()?;
-                    send_text(&chunk.iter().collect::<String>())?;
+                    send_text(&remaining[..end])?;
+                    remaining = &remaining[end..];
                 }
             }
         }
@@ -43,7 +48,7 @@ pub struct DedupGate {
 
 impl DedupGate {
     pub fn accept(&mut self, trigger: &str, source: &str, now: Instant, cooldown_ms: u64) -> bool {
-        if let Some((previous_at, previous_source)) = self.last_accepted.get(trigger) {
+        if let Some((previous_at, previous_source)) = self.last_accepted.get_mut(trigger) {
             let threshold_ms = if previous_source == source {
                 cooldown_ms
             } else {
@@ -56,6 +61,12 @@ impl DedupGate {
             if elapsed < Duration::from_millis(threshold_ms) {
                 return false;
             }
+            *previous_at = now;
+            if previous_source != source {
+                previous_source.clear();
+                previous_source.push_str(source);
+            }
+            return true;
         }
         self.last_accepted
             .insert(trigger.into(), (now, source.into()));

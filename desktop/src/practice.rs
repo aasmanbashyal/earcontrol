@@ -814,14 +814,7 @@ fn dashed(ui: &egui::Ui, y: f32, color: Color32) {
     );
 }
 fn dashed_line(painter: &egui::Painter, left: f32, right: f32, y: f32, color: Color32) {
-    let mut x = left;
-    while x < right {
-        painter.line_segment(
-            [Pos2::new(x, y), Pos2::new((x + 3.0).min(right), y)],
-            Stroke::new(1.0_f32, color),
-        );
-        x += 6.0;
-    }
+    design::dashed_line(painter, left, right, y, color);
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 # Rust port benchmarks and validation
 
-This report compares the preserved EarControl 2.1.2 Windows release with the native Rust 3.0.0 build on `feat/rust-native-ui`. The baseline source revision is `82165a4`. Raw results include the exact executable hashes, file sizes, hardware, settings method and individual samples.
+This historical report compares the preserved EarControl 2.1.2 Windows release with the initial native Rust 3.0.0 build on `feat/rust-native-ui`, committed as `aedea25`. The 2.1.2 baseline source revision is `82165a4`. Raw results include the exact executable hashes, file sizes, hardware, settings method and individual samples. Subsequent changes and current artifact sizes are recorded in [optimization results](optimization.md).
 
 ## Process comparison
 
@@ -18,7 +18,7 @@ Values are medians of five runs. The Rust port used 36.9% less private memory an
 | CPU time during idle observation, ms | 532 | 62 |
 | Idle CPU, percent of one logical core | 10.05% | 1.18% |
 
-CPU measurements are short observations with coarse accounting and background desktop activity. Read the method below before treating them as steady-state CPU or energy results. The executable hash in the process results matches the packaged and live-tested release.
+CPU measurements are short observations with coarse accounting and background desktop activity. Read the method below before treating them as steady-state CPU or energy results. The executable hash in these process results was verified against the packaged and live-tested initial port. Later optimized packages have a different hash.
 
 ## Download size
 

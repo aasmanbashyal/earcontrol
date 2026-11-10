@@ -8,3 +8,7 @@ lto = true
 opt-level = "s"
 strip = true
 panic = "abort"
+
+[patch.crates-io]
+eframe = { path = "vendor/eframe" }
+egui-winit = { path = "vendor/egui-winit" }

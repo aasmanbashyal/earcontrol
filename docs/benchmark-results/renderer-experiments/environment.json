@@ -1,0 +1,19 @@
+{
+  "date": "2026-11-10",
+  "os": "Microsoft Windows 11 Home",
+  "os_version": "10.0.26300",
+  "cpu": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics",
+  "logical_processors": 16,
+  "ram_bytes": 33515835392,
+  "graphics": [
+    {
+      "Name": "AMD Radeon 780M Graphics",
+      "DriverVersion": "31.0.14084.3001"
+    }
+  ],
+  "rust": "1.99.1",
+  "target": "x86_64-pc-windows-msvc",
+  "memory_units": "bytes",
+  "mib_divisor": 1048576,
+  "scope": "Diagnostic controls; separate from the five-run complete-application benchmark."
+}

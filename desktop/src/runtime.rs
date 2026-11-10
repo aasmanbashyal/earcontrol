@@ -339,6 +339,15 @@ impl AppState {
     pub fn events(&self) -> Vec<ActivityEvent> {
         self.events.lock().unwrap().iter().cloned().collect()
     }
+    /// The Buttons preview only needs one command, not a copy of its history.
+    pub fn latest_command_event(&self) -> Option<ActivityEvent> {
+        self.events
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|event| crate::model::TRIGGERS.contains(&event.trigger.as_str()))
+            .cloned()
+    }
     pub fn clear_events(&self) {
         self.events.lock().unwrap().clear();
     }
@@ -463,5 +472,22 @@ mod tests {
         runtime.stop().unwrap();
         assert!(runtime.wait_cancellable(0, generation, None).is_err());
         assert_eq!(runtime.status().mode, "idle");
+    }
+
+    #[test]
+    fn button_preview_returns_latest_command_through_full_history_and_session_events() {
+        let dir = tempfile::tempdir().unwrap();
+        let runtime = AppState::new(dir.path().join("profiles.json"), || {});
+        for index in 0..300 {
+            runtime.event("previous", "test", "detected", format!("event {index}"));
+        }
+        runtime.event("next", "test", "detected", "latest button");
+        runtime.event("session", "test", "info", "session changed");
+        let latest = runtime.latest_command_event().unwrap();
+        assert_eq!(latest.trigger, "next");
+        assert_eq!(latest.detail, "latest button");
+        assert_eq!(runtime.events().len(), 250);
+        runtime.clear_events();
+        assert!(runtime.latest_command_event().is_none());
     }
 }

@@ -1,4 +1,4 @@
-use crate::shortcuts::parse_shortcut;
+use crate::shortcuts::validate_shortcut;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
@@ -226,19 +226,28 @@ pub fn validate_settings(settings: &Settings) -> Result<(), String> {
                 profile.name
             ));
         }
-        let mut mapping_ids = HashSet::new();
-        let mut triggers = HashSet::new();
-        for mapping in &profile.mappings {
+        let mut mapping_ids = [""; TRIGGERS.len()];
+        let mut triggers = 0_u8;
+        for (index, mapping) in profile.mappings.iter().enumerate() {
             validate_identifier(&mapping.id, "Mapping ID")?;
-            if !mapping_ids.insert(&mapping.id) || !triggers.insert(&mapping.trigger) {
+            if mapping_ids[..index].contains(&mapping.id.as_str()) {
                 return Err(format!(
                     "Each button in {} must have one unique mapping.",
                     profile.name
                 ));
             }
-            if !TRIGGERS.contains(&mapping.trigger.as_str()) {
+            mapping_ids[index] = &mapping.id;
+            let Some(trigger) = TRIGGERS.iter().position(|known| *known == mapping.trigger) else {
                 return Err(format!("Unknown headphone command: {}.", mapping.trigger));
+            };
+            let bit = 1 << trigger;
+            if triggers & bit != 0 {
+                return Err(format!(
+                    "Each button in {} must have one unique mapping.",
+                    profile.name
+                ));
             }
+            triggers |= bit;
             validate_name(&mapping.name, "Action name")?;
             validate_macro(mapping)
                 .map_err(|error| format!("{} / {}: {error}", profile.name, mapping.name))?;
@@ -251,7 +260,7 @@ pub fn validate_settings(settings: &Settings) -> Result<(), String> {
 }
 
 fn validate_identifier(value: &str, label: &str) -> Result<(), String> {
-    if value.trim().is_empty() || value.len() > 128 || value.chars().any(char::is_control) {
+    if value.trim().is_empty() || value.len() > 128 || has_control_character(value) {
         return Err(format!(
             "{label} must contain 1 to 128 bytes without control characters."
         ));
@@ -260,13 +269,25 @@ fn validate_identifier(value: &str, label: &str) -> Result<(), String> {
 }
 
 fn validate_name(value: &str, label: &str) -> Result<(), String> {
-    if value.trim().is_empty() || value.chars().count() > 80 || value.chars().any(char::is_control)
-    {
+    let length = if value.is_ascii() {
+        value.len()
+    } else {
+        value.chars().count()
+    };
+    if value.trim().is_empty() || length > 80 || has_control_character(value) {
         return Err(format!(
             "{label} must contain 1 to 80 characters without line breaks."
         ));
     }
     Ok(())
+}
+
+fn has_control_character(value: &str) -> bool {
+    if value.is_ascii() {
+        value.bytes().any(|byte| byte.is_ascii_control())
+    } else {
+        value.chars().any(char::is_control)
+    }
 }
 
 fn validate_macro(mapping: &Mapping) -> Result<(), String> {
@@ -281,7 +302,7 @@ fn validate_macro(mapping: &Mapping) -> Result<(), String> {
     for step in &mapping.steps {
         match step {
             MacroStep::Key { keys } => {
-                parse_shortcut(keys)?;
+                validate_shortcut(keys)?;
             }
             MacroStep::Delay { ms } => {
                 total_delay = total_delay

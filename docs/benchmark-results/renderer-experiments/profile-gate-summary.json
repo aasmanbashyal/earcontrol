@@ -1,0 +1,86 @@
+[
+  {
+    "workload": "parse_shortcut_ctrl_shift_f5",
+    "s_median_us": 0.13702999999999999,
+    "z_median_us": 0.28137,
+    "z_over_s": 2.053345982631541,
+    "slowdown_percent": 105.33459826315408
+  },
+  {
+    "workload": "validate_default_profiles",
+    "s_median_us": 2.2482,
+    "z_median_us": 2.7800000000000002,
+    "z_over_s": 1.2365447913886665,
+    "slowdown_percent": 23.654479138866648
+  },
+  {
+    "workload": "decode_and_validate_profiles",
+    "s_median_us": 22.472749999999998,
+    "z_median_us": 29.68935,
+    "z_over_s": 1.3211266978896665,
+    "slowdown_percent": 32.112669788966656
+  },
+  {
+    "workload": "dedup_accept_command",
+    "s_median_us": 0.040415,
+    "z_median_us": 0.048130000000000006,
+    "z_over_s": 1.1908944698750465,
+    "slowdown_percent": 19.089446987504655
+  },
+  {
+    "workload": "macro_dispatch_unicode_no_os_io",
+    "s_median_us": 0.6184999999999999,
+    "z_median_us": 2.8228,
+    "z_over_s": 4.563945028294261,
+    "slowdown_percent": 356.3945028294261
+  },
+  {
+    "workload": "ui_buttons",
+    "s_median_us": 390.05275,
+    "z_median_us": 523.84725,
+    "z_over_s": 1.3430164253424697,
+    "slowdown_percent": 34.301642534246966
+  },
+  {
+    "workload": "ui_macros",
+    "s_median_us": 329.69849999999997,
+    "z_median_us": 511.596,
+    "z_over_s": 1.5517086064995749,
+    "slowdown_percent": 55.17086064995749
+  },
+  {
+    "workload": "ui_devices",
+    "s_median_us": 249.22949999999997,
+    "z_median_us": 306.68075,
+    "z_over_s": 1.2305154486126242,
+    "slowdown_percent": 23.051544861262418
+  },
+  {
+    "workload": "ui_activity",
+    "s_median_us": 197.66449999999998,
+    "z_median_us": 269.7175,
+    "z_over_s": 1.364521702177174,
+    "slowdown_percent": 36.45217021771741
+  },
+  {
+    "workload": "ui_settings",
+    "s_median_us": 314.2935,
+    "z_median_us": 408.02025,
+    "z_over_s": 1.2982140896964143,
+    "slowdown_percent": 29.82140896964143
+  },
+  {
+    "workload": "ui_practice",
+    "s_median_us": 138.8075,
+    "z_median_us": 183.33575000000002,
+    "z_over_s": 1.320791383750878,
+    "slowdown_percent": 32.0791383750878
+  },
+  {
+    "workload": "ui_buttons_32_profiles_unicode_macros",
+    "s_median_us": 448.384,
+    "z_median_us": 564.5397499999999,
+    "z_over_s": 1.2590541812375105,
+    "slowdown_percent": 25.905418123751044
+  }
+]

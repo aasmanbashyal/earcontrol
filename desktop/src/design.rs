@@ -2,7 +2,7 @@ use eframe::egui::{
     self, Align2, Color32, FontFamily, FontId, Painter, Rect, Response, RichText, Sense, Stroke,
     StrokeKind, Ui, Vec2,
 };
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 #[derive(Clone, Copy)]
 pub struct Palette {
@@ -547,6 +547,59 @@ pub fn window_controls(ui: &mut Ui, rect: Rect) {
         }
     }
 }
+#[derive(Clone, PartialEq)]
+struct DashKey {
+    geometry: [u32; 4],
+    color: Color32,
+    options: egui::epaint::TessellationOptions,
+}
+
+#[derive(Clone, Default)]
+struct DashCache(std::collections::VecDeque<(DashKey, Arc<egui::epaint::Mesh>)>);
+
+fn dash_mesh(key: &DashKey) -> egui::epaint::Mesh {
+    let [left, right, y, pixels_per_point] = key.geometry.map(f32::from_bits);
+    let mut tessellator =
+        egui::epaint::Tessellator::new(pixels_per_point, key.options, [1, 1], Vec::new());
+    let mut mesh = egui::epaint::Mesh::default();
+    let mut x = left;
+    while x < right {
+        tessellator.tessellate_line_segment(
+            [egui::pos2(x, y), egui::pos2((x + 3.0).min(right), y)],
+            Stroke::new(1.0_f32, key.color),
+            &mut mesh,
+        );
+        x += 6.0;
+    }
+    mesh
+}
+
+/// Reuse egui's exact dash tessellation instead of rebuilding hundreds of
+/// individual shapes on every repaint. Only decorative geometry is cached.
+pub fn dashed_line(painter: &Painter, left: f32, right: f32, y: f32, color: Color32) {
+    if !left.is_finite() || !right.is_finite() || !y.is_finite() || right <= left {
+        return;
+    }
+    let key = DashKey {
+        geometry: [left, right, y, painter.ctx().pixels_per_point()].map(f32::to_bits),
+        color,
+        options: painter.ctx().tessellation_options(|options| *options),
+    };
+    let mesh = painter.ctx().data_mut(|data| {
+        let cache = data.get_temp_mut_or_default::<DashCache>(egui::Id::new("dash_meshes"));
+        if let Some((_, mesh)) = cache.0.iter().find(|(cached, _)| cached == &key) {
+            return Arc::clone(mesh);
+        }
+        let mesh = Arc::new(dash_mesh(&key));
+        if cache.0.len() == 32 {
+            cache.0.pop_front();
+        }
+        cache.0.push_back((key, Arc::clone(&mesh)));
+        mesh
+    });
+    painter.add(egui::Shape::Mesh(mesh));
+}
+
 pub fn configure_style(ctx: &egui::Context) {
     ctx.all_styles_mut(|style| {
         let p = Palette::for_dark(style.visuals.dark_mode);
@@ -593,62 +646,156 @@ pub fn configure_style(ctx: &egui::Context) {
         style.visuals.widgets.noninteractive.bg_stroke = Stroke::new(1.0_f32, p.line);
         style.visuals.widgets.noninteractive.fg_stroke = Stroke::new(1.0_f32, p.text);
     });
-    let mut fonts = egui::FontDefinitions::default();
-    let fallback = fonts
-        .families
-        .get(&FontFamily::Proportional)
-        .cloned()
-        .unwrap_or_default();
-    fonts
-        .families
-        .insert(FontFamily::Name("semibold".into()), fallback);
-    if let Some(windir) = std::env::var_os("WINDIR") {
-        add_windows_fonts(&mut fonts, &std::path::Path::new(&windir).join("Fonts"));
-    }
+    let mut fonts = emergency_fonts();
+    add_windows_fonts(&mut fonts, system_fonts());
     ctx.set_fonts(fonts);
 }
 
-fn add_windows_fonts(fonts: &mut egui::FontDefinitions, directory: &std::path::Path) {
-    for (name, file, family) in [
-        ("Segoe", "segoeui.ttf", FontFamily::Proportional),
-        (
-            "Segoe Semibold",
-            "seguisb.ttf",
-            FontFamily::Name("semibold".into()),
-        ),
+fn emergency_fonts() -> egui::FontDefinitions {
+    let mut fonts = egui::FontDefinitions::empty();
+    fonts.font_data.insert(
+        "Emergency Mono".into(),
+        Arc::new(egui::FontData::from_static(include_bytes!(
+            "../assets/fonts/EmergencyMono.ttf"
+        ))),
+    );
+    for family in [
+        FontFamily::Proportional,
+        FontFamily::Monospace,
+        FontFamily::Name("semibold".into()),
     ] {
-        if let Ok(data) = std::fs::read(directory.join(file)) {
-            fonts
-                .font_data
-                .insert(name.into(), Arc::new(egui::FontData::from_owned(data)));
-            fonts
-                .families
-                .entry(family)
-                .or_default()
-                .insert(0, name.into());
+        fonts.families.insert(family, vec!["Emergency Mono".into()]);
+    }
+    fonts
+}
+
+enum FontBytes {
+    #[cfg(windows)]
+    Mapped {
+        mapping: memmap2::Mmap,
+        // Keep the read-only sharing lock for the complete mapping lifetime.
+        _file: std::fs::File,
+    },
+    Owned(Box<[u8]>),
+}
+
+impl FontBytes {
+    fn as_slice(&self) -> &[u8] {
+        match self {
+            #[cfg(windows)]
+            Self::Mapped { mapping, .. } => mapping,
+            Self::Owned(bytes) => bytes,
         }
     }
-    // Nirmala ships as a font collection on recent Windows versions. Keep
-    // Windows fonts optional and retain the bundled fallbacks ahead of them.
-    for (name, candidates) in [
-        ("Nirmala UI", &["Nirmala.ttf", "Nirmala.ttc"][..]),
-        ("Segoe UI Emoji", &["seguiemj.ttf"][..]),
+}
+
+struct SystemFont {
+    name: &'static str,
+    primary_family: Option<FontFamily>,
+    bytes: FontBytes,
+}
+
+fn load_font_bytes(path: &std::path::Path) -> Option<FontBytes> {
+    #[cfg(windows)]
+    {
+        use std::{io::Read, os::windows::fs::OpenOptionsExt};
+        // FILE_SHARE_READ excludes concurrent writes/deletion. Font mappings are
+        // only made from the OS font directory and never expose a writable view.
+        let mut file = std::fs::OpenOptions::new()
+            .read(true)
+            .share_mode(1)
+            .open(path)
+            .ok()?;
+        // SAFETY: the retained handle denies writers/truncation and deletion;
+        // these installed font files remain immutable for the mapping lifetime.
+        if let Ok(mapping) = unsafe { memmap2::MmapOptions::new().no_probe_handle().map(&file) } {
+            return Some(FontBytes::Mapped {
+                mapping,
+                _file: file,
+            });
+        }
+        // Restricted systems may refuse mapping. A single cached owned copy
+        // still avoids the extra copy epaint makes from owned FontData.
+        let mut bytes = Vec::new();
+        file.read_to_end(&mut bytes).ok()?;
+        Some(FontBytes::Owned(bytes.into_boxed_slice()))
+    }
+    #[cfg(not(windows))]
+    {
+        std::fs::read(path)
+            .ok()
+            .map(|bytes| FontBytes::Owned(bytes.into_boxed_slice()))
+    }
+}
+
+fn read_system_fonts(directory: &std::path::Path) -> Vec<SystemFont> {
+    let mut fonts = Vec::new();
+    for (name, candidates, primary_family) in [
+        (
+            "Segoe",
+            &["segoeui.ttf"][..],
+            Some(FontFamily::Proportional),
+        ),
+        (
+            "Segoe Semibold",
+            &["seguisb.ttf"][..],
+            Some(FontFamily::Name("semibold".into())),
+        ),
+        (
+            "Consolas",
+            &["consola.ttf"][..],
+            Some(FontFamily::Monospace),
+        ),
+        ("Nirmala UI", &["Nirmala.ttf", "Nirmala.ttc"][..], None),
+        ("Segoe UI Emoji", &["seguiemj.ttf"][..], None),
     ] {
-        let Some(data) = candidates
+        if let Some(bytes) = candidates
             .iter()
-            .find_map(|file| std::fs::read(directory.join(file)).ok())
-        else {
-            continue;
-        };
-        fonts
-            .font_data
-            .insert(name.into(), Arc::new(egui::FontData::from_owned(data)));
-        for family in [
-            FontFamily::Proportional,
-            FontFamily::Monospace,
-            FontFamily::Name("semibold".into()),
-        ] {
-            fonts.families.entry(family).or_default().push(name.into());
+            .find_map(|file| load_font_bytes(&directory.join(file)))
+        {
+            fonts.push(SystemFont {
+                name,
+                primary_family,
+                bytes,
+            });
+        }
+    }
+    fonts
+}
+
+fn system_fonts() -> &'static [SystemFont] {
+    static FONTS: OnceLock<Vec<SystemFont>> = OnceLock::new();
+    FONTS.get_or_init(|| {
+        std::env::var_os("WINDIR")
+            .map(|windir| read_system_fonts(&std::path::Path::new(&windir).join("Fonts")))
+            .unwrap_or_default()
+    })
+}
+
+fn add_windows_fonts(fonts: &mut egui::FontDefinitions, sources: &'static [SystemFont]) {
+    for source in sources {
+        fonts.font_data.insert(
+            source.name.into(),
+            Arc::new(egui::FontData::from_static(source.bytes.as_slice())),
+        );
+        if let Some(family) = &source.primary_family {
+            fonts
+                .families
+                .entry(family.clone())
+                .or_default()
+                .insert(0, source.name.into());
+        } else {
+            for family in [
+                FontFamily::Proportional,
+                FontFamily::Monospace,
+                FontFamily::Name("semibold".into()),
+            ] {
+                fonts
+                    .families
+                    .entry(family)
+                    .or_default()
+                    .push(source.name.into());
+            }
         }
     }
 }
@@ -692,14 +839,120 @@ pub fn resize_edges(ctx: &egui::Context) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn cached_dashes_match_original_tessellation_and_stay_bounded() {
+        for pixels_per_point in [1.0, 1.25, 2.0] {
+            let ctx = egui::Context::default();
+            ctx.set_pixels_per_point(pixels_per_point);
+            let left = 17.25;
+            let right = 321.5;
+            let y = 24.75;
+            let color = Color32::from_gray(122);
+            let output = ctx.run(egui::RawInput::default(), |ctx| {
+                let painter = ctx.layer_painter(egui::LayerId::background());
+                dashed_line(&painter, left, right, y, color);
+            });
+            let key = DashKey {
+                geometry: [left, right, y, output.pixels_per_point].map(f32::to_bits),
+                color,
+                options: ctx.tessellation_options(|o| *o),
+            };
+            let cached = dash_mesh(&key);
+            let mut shapes = Vec::new();
+            let mut x = left;
+            while x < right {
+                shapes.push(egui::epaint::ClippedShape {
+                    clip_rect: Rect::EVERYTHING,
+                    shape: egui::Shape::line_segment(
+                        [egui::pos2(x, y), egui::pos2((x + 3.0).min(right), y)],
+                        Stroke::new(1.0_f32, color),
+                    ),
+                });
+                x += 6.0;
+            }
+            let original = ctx.tessellate(shapes, output.pixels_per_point);
+            let egui::epaint::Primitive::Mesh(original) = &original[0].primitive else {
+                panic!("Expected a mesh");
+            };
+            assert_eq!(
+                cached, *original,
+                "Dash geometry changed at {pixels_per_point}x DPI"
+            );
+            let _ = ctx.run(egui::RawInput::default(), |ctx| {
+                let painter = ctx.layer_painter(egui::LayerId::background());
+                for offset in 0..100 {
+                    dashed_line(&painter, left, right, y + offset as f32, color);
+                }
+            });
+            ctx.data_mut(|data| {
+                assert_eq!(
+                    data.get_temp_mut_or_default::<DashCache>(egui::Id::new("dash_meshes"))
+                        .0
+                        .len(),
+                    32
+                );
+            });
+        }
+    }
 
     #[test]
     fn missing_windows_fonts_preserve_bundled_fallbacks() {
         let directory = tempfile::tempdir().unwrap();
-        let mut fonts = egui::FontDefinitions::default();
+        assert!(read_system_fonts(directory.path()).is_empty());
+        let mut fonts = emergency_fonts();
         let original = fonts.clone();
-        add_windows_fonts(&mut fonts, directory.path());
+        add_windows_fonts(&mut fonts, &[]);
         assert_eq!(fonts, original);
+        let ctx = egui::Context::default();
+        ctx.set_fonts(fonts);
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            ctx.fonts_mut(|fonts| {
+                for family in [
+                    FontFamily::Proportional,
+                    FontFamily::Monospace,
+                    FontFamily::Name("semibold".into()),
+                ] {
+                    assert!(
+                        fonts.has_glyphs(&FontId::new(14.0, family), "EarControl Save & start 123")
+                    );
+                }
+            });
+        });
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn mapped_font_bytes_stay_read_only_until_the_font_is_released() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("font.bin");
+        std::fs::write(&path, b"stable font bytes").unwrap();
+        let bytes = load_font_bytes(&path).unwrap();
+        assert!(matches!(bytes, FontBytes::Mapped { .. }));
+        assert_eq!(bytes.as_slice(), b"stable font bytes");
+        assert!(std::fs::OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open(&path)
+            .is_err());
+        assert!(std::fs::remove_file(&path).is_err());
+        drop(bytes);
+        std::fs::write(&path, b"released").unwrap();
+    }
+
+    #[test]
+    fn system_fonts_are_cached_and_borrowed_without_copying_font_files() {
+        let sources = system_fonts();
+        let mut first = egui::FontDefinitions::empty();
+        let mut second = egui::FontDefinitions::empty();
+        add_windows_fonts(&mut first, sources);
+        add_windows_fonts(&mut second, system_fonts());
+        for source in sources {
+            let a = &first.font_data[source.name].font;
+            let b = &second.font_data[source.name].font;
+            assert!(matches!(a, std::borrow::Cow::Borrowed(_)));
+            assert_eq!(a.as_ptr(), source.bytes.as_slice().as_ptr());
+            assert_eq!(a.as_ptr(), b.as_ptr());
+        }
     }
 
     #[test]

@@ -111,5 +111,42 @@ fn main() {
         let output = ctx.run(input, |ctx| practice.show(ctx));
         black_box(ctx.tessellate(output.shapes, output.pixels_per_point));
     }));
+    // Diagnostic for large configurations. The original eleven workload rows
+    // above remain unchanged so historical comparisons use the same inputs.
+    let mut loaded = Settings::default();
+    let template = loaded.profiles[0].clone();
+    loaded.profiles = (0..32)
+        .map(|index| {
+            let mut profile = template.clone();
+            profile.id = format!("benchmark-{index}");
+            profile.name = format!("Benchmark profile {index}");
+            for mapping in &mut profile.mappings {
+                mapping.id = format!("{}-{}", profile.id, mapping.trigger);
+                mapping.steps = vec![MacroStep::Text {
+                    text: "नमस्ते 🦀 ".repeat(150),
+                }];
+            }
+            profile
+        })
+        .collect();
+    loaded.active_profile_id = loaded.profiles[0].id.clone();
+    let loaded_path = directory.path().join("loaded-profiles.json");
+    earcontrol_lib::settings::save_settings(&loaded_path, &loaded).unwrap();
+    let mut loaded_app = EarControl::from_runtime(AppState::new(loaded_path, || {}));
+    results.push(measure(
+        "ui_buttons_32_profiles_unicode_macros",
+        200,
+        || {
+            let input = egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(1160.0, 780.0),
+                )),
+                ..Default::default()
+            };
+            let output = ctx.run(input, |ctx| loaded_app.show(ctx));
+            black_box(ctx.tessellate(output.shapes, output.pixels_per_point));
+        },
+    ));
     println!("{}", serde_json::to_string_pretty(&json!({"version":env!("CARGO_PKG_VERSION"), "units":"microseconds", "method":"21 warmed batches, CPU only", "results":results})).unwrap());
 }

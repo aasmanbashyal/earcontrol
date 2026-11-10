@@ -15,7 +15,8 @@ winresource = "0.1"
 
 [dependencies]
 accesskit_windows = "=0.29.2"
-eframe = { version = "=0.33.3", default-features = false, features = ["glow", "default_fonts", "accesskit"] }
+eframe = { version = "=0.33.3", default-features = false, features = ["glow", "accesskit"] }
+memmap2 = "=0.9.12"
 raw-window-handle = "0.6"
 rfd = { version = "0.15", default-features = false }
 serde = { version = "1", features = ["derive"] }

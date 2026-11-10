@@ -1,6 +1,9 @@
 param(
     [Parameter(Mandatory)][string]$Baseline,
     [string]$Candidate = "$PSScriptRoot/../target/release/earcontrol.exe",
+    [ValidatePattern('^[a-zA-Z0-9_-]+$')][string]$BaselineName = 'tauri_2_1_2',
+    [ValidatePattern('^[a-zA-Z0-9_-]+$')][string]$CandidateName = 'rust_3_0_0',
+    [switch]$BaselineUsesIsolatedSettings,
     [ValidateRange(3,30)][int]$Runs = 5,
     [ValidateRange(1,30)][int]$SettleSeconds = 3,
     [ValidateRange(1,30)][int]$IdleSeconds = 3,
@@ -17,6 +20,9 @@ $candidateSettings = Join-Path $scratch 'candidate-profiles.json'
 if (Test-Path -LiteralPath $baselineSettings) {
     Copy-Item -LiteralPath $baselineSettings -Destination $candidateSettings
     $settingsMethod = 'Both apps read the same existing configuration; candidate uses an isolated copy. Baseline only reads its original file.'
+    if ($BaselineUsesIsolatedSettings) {
+        $settingsMethod = 'Both native Rust apps read the same isolated copy of the existing configuration. Neither app writes the original file.'
+    }
 } else {
     $settingsMethod = 'No baseline configuration exists; both apps use their unchanged version-2 defaults.'
 }
@@ -94,12 +100,12 @@ function Measure-Launch([string]$Name, [string]$Path, [int]$Round) {
 }
 
 $samples = @()
-foreach ($item in @(@('tauri_2_1_2',$baselinePath), @('rust_3_0_0',$candidatePath))) {
+foreach ($item in @(@($BaselineName,$baselinePath), @($CandidateName,$candidatePath))) {
     Write-Host "Warming $($item[0])"
     $null = Measure-Launch $item[0] $item[1] 0
 }
 for ($round=1; $round -le $Runs; $round++) {
-    $order = if ($round % 2) { @(@('tauri_2_1_2',$baselinePath), @('rust_3_0_0',$candidatePath)) } else { @(@('rust_3_0_0',$candidatePath), @('tauri_2_1_2',$baselinePath)) }
+    $order = if ($round % 2) { @(@($BaselineName,$baselinePath), @($CandidateName,$candidatePath)) } else { @(@($CandidateName,$candidatePath), @($BaselineName,$baselinePath)) }
     foreach ($item in $order) {
         $sample = Measure-Launch $item[0] $item[1] $round
         $samples += $sample

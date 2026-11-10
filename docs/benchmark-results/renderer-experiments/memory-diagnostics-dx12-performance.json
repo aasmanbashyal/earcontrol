@@ -1,0 +1,2465 @@
+{
+  "measured_at_utc": "2026-11-10T07:41:44.8327307Z",
+  "method": "One sequential diagnostic sample per executable after eight seconds, isolated shared settings copy. VirtualQueryEx committed regions; QueryWorkingSetEx page metadata; loaded module metadata. No process memory content read. No CPU/startup comparison.",
+  "samples": [
+    {
+      "name": "empty_eframe_dx12_performance",
+      "sha256": "17eaac1643d066f630716bea70894b639b3c31e41690ce1d7a7f68afe259a06e",
+      "settle_seconds": 8,
+      "snapshot": {
+        "PrivateBytes": 462422016,
+        "WorkingSetBytes": 498040832,
+        "PeakWorkingSetBytes": 504459264,
+        "ByTypeProtection": [
+          {
+            "Kind": "private",
+            "Protection": "read_only",
+            "File": null,
+            "CommittedBytes": 40960,
+            "ResidentBytes": 40960,
+            "ResidentPrivateBytes": 32768,
+            "ResidentSharedBytes": 8192,
+            "Regions": 7
+          },
+          {
+            "Kind": "private",
+            "Protection": "read_write",
+            "File": null,
+            "CommittedBytes": 457338880,
+            "ResidentBytes": 450220032,
+            "ResidentPrivateBytes": 450220032,
+            "ResidentSharedBytes": 0,
+            "Regions": 92
+          },
+          {
+            "Kind": "private",
+            "Protection": "read_write+guard",
+            "File": null,
+            "CommittedBytes": 221184,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 17
+          },
+          {
+            "Kind": "mapped",
+            "Protection": "read_only",
+            "File": null,
+            "CommittedBytes": 10272768,
+            "ResidentBytes": 1757184,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 1757184,
+            "Regions": 34
+          },
+          {
+            "Kind": "mapped",
+            "Protection": "read_write",
+            "File": null,
+            "CommittedBytes": 335872,
+            "ResidentBytes": 143360,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 143360,
+            "Regions": 8
+          },
+          {
+            "Kind": "mapped",
+            "Protection": "write_copy",
+            "File": null,
+            "CommittedBytes": 294912,
+            "ResidentBytes": 12288,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 12288,
+            "Regions": 1
+          },
+          {
+            "Kind": "image",
+            "Protection": "read_only",
+            "File": null,
+            "CommittedBytes": 71831552,
+            "ResidentBytes": 14217216,
+            "ResidentPrivateBytes": 651264,
+            "ResidentSharedBytes": 13565952,
+            "Regions": 187
+          },
+          {
+            "Kind": "image",
+            "Protection": "execute_read",
+            "File": null,
+            "CommittedBytes": 81920000,
+            "ResidentBytes": 30642176,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 30642176,
+            "Regions": 118
+          },
+          {
+            "Kind": "image",
+            "Protection": "read_write",
+            "File": null,
+            "CommittedBytes": 1404928,
+            "ResidentBytes": 1404928,
+            "ResidentPrivateBytes": 1404928,
+            "ResidentSharedBytes": 0,
+            "Regions": 91
+          },
+          {
+            "Kind": "image",
+            "Protection": "write_copy",
+            "File": null,
+            "CommittedBytes": 757760,
+            "ResidentBytes": 32768,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 32768,
+            "Regions": 35
+          }
+        ],
+        "Allocations": [
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 143360,
+            "ResidentBytes": 143360,
+            "ResidentPrivateBytes": 143360,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 110592,
+            "ResidentBytes": 86016,
+            "ResidentPrivateBytes": 86016,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 24576,
+            "ResidentBytes": 12288,
+            "ResidentPrivateBytes": 12288,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 20480,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 20480,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 20480,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 20480,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 20480,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 20480,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 20480,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 20480,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 24576,
+            "ResidentBytes": 12288,
+            "ResidentPrivateBytes": 12288,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 32768,
+            "ResidentBytes": 20480,
+            "ResidentPrivateBytes": 20480,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 28672,
+            "ResidentBytes": 16384,
+            "ResidentPrivateBytes": 16384,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 20480,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 20480,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 20480,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 20480,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 2097152,
+            "ResidentBytes": 2097152,
+            "ResidentPrivateBytes": 2097152,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 2097152,
+            "ResidentBytes": 2097152,
+            "ResidentPrivateBytes": 2097152,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 4096,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 147456,
+            "ResidentBytes": 147456,
+            "ResidentPrivateBytes": 147456,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 32768,
+            "ResidentBytes": 32768,
+            "ResidentPrivateBytes": 32768,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 268435456,
+            "ResidentBytes": 268435456,
+            "ResidentPrivateBytes": 268435456,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 67108864,
+            "ResidentBytes": 67108864,
+            "ResidentPrivateBytes": 67108864,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 4096,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 4096,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": "oleaccrc.dll",
+            "CommittedBytes": 12288,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 1052672,
+            "ResidentBytes": 1052672,
+            "ResidentPrivateBytes": 1052672,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 65536,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 65536,
+            "ResidentBytes": 65536,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 65536,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 65536,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 4096,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 4096,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": "UIAutomationCore.dll.mui",
+            "CommittedBytes": 20480,
+            "ResidentBytes": 12288,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 12288,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 4096,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 2473984,
+            "ResidentBytes": 2469888,
+            "ResidentPrivateBytes": 2469888,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 65536,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 172032,
+            "ResidentBytes": 98304,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 98304,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 16384,
+            "ResidentBytes": 12288,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 12288,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 8192,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": "C_1252.NLS",
+            "CommittedBytes": 69632,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": "C_437.NLS",
+            "CommittedBytes": 69632,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": "l_intl.nls",
+            "CommittedBytes": 12288,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 73728,
+            "ResidentBytes": 73728,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 73728,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 73728,
+            "ResidentBytes": 73728,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 73728,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 28672,
+            "ResidentBytes": 28672,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 28672,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 49152,
+            "ResidentBytes": 36864,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 36864,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 16384,
+            "ResidentBytes": 16384,
+            "ResidentPrivateBytes": 16384,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": "l_intl.nls",
+            "CommittedBytes": 12288,
+            "ResidentBytes": 12288,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 12288,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 32768,
+            "ResidentBytes": 16384,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 16384,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 1044480,
+            "ResidentBytes": 1040384,
+            "ResidentPrivateBytes": 1040384,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": "locale.nls",
+            "CommittedBytes": 864256,
+            "ResidentBytes": 65536,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 65536,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": "C_1252.NLS",
+            "CommittedBytes": 69632,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 8192,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": "C_437.NLS",
+            "CommittedBytes": 69632,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 86016,
+            "ResidentBytes": 69632,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 69632,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 24576,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 28672,
+            "ResidentBytes": 28672,
+            "ResidentPrivateBytes": 28672,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 8192,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 1576960,
+            "ResidentBytes": 40960,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 40960,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 507904,
+            "ResidentBytes": 49152,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 49152,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 4096,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 4096,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 40960,
+            "ResidentBytes": 40960,
+            "ResidentPrivateBytes": 40960,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 1355776,
+            "ResidentBytes": 110592,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 110592,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 8192,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": "user32.dll.mui",
+            "CommittedBytes": 20480,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 8192,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 4096,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 294912,
+            "ResidentBytes": 12288,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 12288,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 1044480,
+            "ResidentBytes": 1044480,
+            "ResidentPrivateBytes": 1044480,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 4096,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 36864,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 4096,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 4096,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 4096,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 4096,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 61440,
+            "ResidentBytes": 61440,
+            "ResidentPrivateBytes": 61440,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 1044480,
+            "ResidentBytes": 1040384,
+            "ResidentPrivateBytes": 1040384,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 15810560,
+            "ResidentBytes": 9789440,
+            "ResidentPrivateBytes": 9789440,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 266240,
+            "ResidentBytes": 262144,
+            "ResidentPrivateBytes": 262144,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 8192,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 2064384,
+            "ResidentBytes": 2027520,
+            "ResidentPrivateBytes": 2027520,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 32526336,
+            "ResidentBytes": 32411648,
+            "ResidentPrivateBytes": 32411648,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4198400,
+            "ResidentBytes": 4198400,
+            "ResidentPrivateBytes": 4198400,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": "SortDefault.nls",
+            "CommittedBytes": 3387392,
+            "ResidentBytes": 36864,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 36864,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 2097152,
+            "ResidentBytes": 2097152,
+            "ResidentPrivateBytes": 2097152,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 2101248,
+            "ResidentBytes": 2101248,
+            "ResidentPrivateBytes": 2101248,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 36864,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 36864,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4067328,
+            "ResidentBytes": 3526656,
+            "ResidentPrivateBytes": 3526656,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 8192,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 0,
+            "Regions": 2
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 2101248,
+            "ResidentBytes": 2101248,
+            "ResidentPrivateBytes": 2101248,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 2101248,
+            "ResidentBytes": 2101248,
+            "ResidentPrivateBytes": 2101248,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 36864,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 16384,
+            "ResidentBytes": 16384,
+            "ResidentPrivateBytes": 16384,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": "6F75932F-7DFC-4FB0-B4B8-12DE1AC415DA_VEN_1002&DEV_15BF&SUBSYS_180D&REV_C1.dxcache-shm",
+            "CommittedBytes": 32768,
+            "ResidentBytes": 32768,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 32768,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 4096,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": "F4EB2D6C-ED2B-4BDD-AD9D-F913287E6768.dxcache-shm",
+            "CommittedBytes": 32768,
+            "ResidentBytes": 32768,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 32768,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4198400,
+            "ResidentBytes": 4198400,
+            "ResidentPrivateBytes": 4198400,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4198400,
+            "ResidentBytes": 4198400,
+            "ResidentPrivateBytes": 4198400,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 2093056,
+            "ResidentBytes": 2015232,
+            "ResidentPrivateBytes": 2015232,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 36864,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 36864,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 32002048,
+            "ResidentBytes": 32002048,
+            "ResidentPrivateBytes": 32002048,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": "DirectXApps.sdb",
+            "CommittedBytes": 1609728,
+            "ResidentBytes": 937984,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 937984,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 20480,
+            "ResidentBytes": 8192,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 8192,
+            "Regions": 1
+          },
+          {
+            "Kind": "private",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 0,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 0,
+            "Regions": 1
+          },
+          {
+            "Kind": "mapped",
+            "Protection": null,
+            "File": null,
+            "CommittedBytes": 4096,
+            "ResidentBytes": 4096,
+            "ResidentPrivateBytes": 0,
+            "ResidentSharedBytes": 4096,
+            "Regions": 1
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "earcontrol-wgpu-probe.exe",
+            "CommittedBytes": 3481600,
+            "ResidentBytes": 3481600,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 3473408,
+            "Regions": 5
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "amdxc64.dll",
+            "CommittedBytes": 67739648,
+            "ResidentBytes": 14561280,
+            "ResidentPrivateBytes": 360448,
+            "ResidentSharedBytes": 14200832,
+            "Regions": 21
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "dxilconv.dll",
+            "CommittedBytes": 1458176,
+            "ResidentBytes": 1011712,
+            "ResidentPrivateBytes": 45056,
+            "ResidentSharedBytes": 966656,
+            "Regions": 7
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "d3d10warp.dll",
+            "CommittedBytes": 5967872,
+            "ResidentBytes": 1249280,
+            "ResidentPrivateBytes": 106496,
+            "ResidentSharedBytes": 1142784,
+            "Regions": 7
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "D3D12Core.dll",
+            "CommittedBytes": 3481600,
+            "ResidentBytes": 1527808,
+            "ResidentPrivateBytes": 73728,
+            "ResidentSharedBytes": 1454080,
+            "Regions": 16
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "ExplorerFrame.dll",
+            "CommittedBytes": 3309568,
+            "ResidentBytes": 434176,
+            "ResidentPrivateBytes": 49152,
+            "ResidentSharedBytes": 385024,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "IconCodecService.dll",
+            "CommittedBytes": 49152,
+            "ResidentBytes": 45056,
+            "ResidentPrivateBytes": 12288,
+            "ResidentSharedBytes": 32768,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "D3D12.dll",
+            "CommittedBytes": 147456,
+            "ResidentBytes": 118784,
+            "ResidentPrivateBytes": 12288,
+            "ResidentSharedBytes": 106496,
+            "Regions": 8
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "D3DSCache.dll",
+            "CommittedBytes": 917504,
+            "ResidentBytes": 761856,
+            "ResidentPrivateBytes": 28672,
+            "ResidentSharedBytes": 733184,
+            "Regions": 7
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "vcruntime140.dll",
+            "CommittedBytes": 122880,
+            "ResidentBytes": 61440,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 53248,
+            "Regions": 5
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "DataExchange.dll",
+            "CommittedBytes": 376832,
+            "ResidentBytes": 151552,
+            "ResidentPrivateBytes": 16384,
+            "ResidentSharedBytes": 135168,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "UIAutomationCore.dll",
+            "CommittedBytes": 4329472,
+            "ResidentBytes": 1789952,
+            "ResidentPrivateBytes": 53248,
+            "ResidentSharedBytes": 1736704,
+            "Regions": 10
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "oleacc.dll",
+            "CommittedBytes": 483328,
+            "ResidentBytes": 294912,
+            "ResidentPrivateBytes": 16384,
+            "ResidentSharedBytes": 278528,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "amdihk64.dll",
+            "CommittedBytes": 217088,
+            "ResidentBytes": 172032,
+            "ResidentPrivateBytes": 16384,
+            "ResidentSharedBytes": 155648,
+            "Regions": 5
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "threadpoolwinrt.dll",
+            "CommittedBytes": 94208,
+            "ResidentBytes": 77824,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 69632,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "twinapi.appcore.dll",
+            "CommittedBytes": 2428928,
+            "ResidentBytes": 528384,
+            "ResidentPrivateBytes": 32768,
+            "ResidentSharedBytes": 495616,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "winmm.dll",
+            "CommittedBytes": 225280,
+            "ResidentBytes": 90112,
+            "ResidentPrivateBytes": 20480,
+            "ResidentSharedBytes": 69632,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "version.dll",
+            "CommittedBytes": 49152,
+            "ResidentBytes": 32768,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 24576,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "directxdatabasehelper.dll",
+            "CommittedBytes": 393216,
+            "ResidentBytes": 360448,
+            "ResidentPrivateBytes": 20480,
+            "ResidentSharedBytes": 339968,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "Microsoft.Internal.WarpPal.dll",
+            "CommittedBytes": 110592,
+            "ResidentBytes": 49152,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 40960,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "D3DCompiler_47.dll",
+            "CommittedBytes": 4718592,
+            "ResidentBytes": 2191360,
+            "ResidentPrivateBytes": 81920,
+            "ResidentSharedBytes": 2109440,
+            "Regions": 8
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "WindowsCodecs.dll",
+            "CommittedBytes": 2351104,
+            "ResidentBytes": 737280,
+            "ResidentPrivateBytes": 24576,
+            "ResidentSharedBytes": 712704,
+            "Regions": 7
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "dcomp.dll",
+            "CommittedBytes": 2314240,
+            "ResidentBytes": 385024,
+            "ResidentPrivateBytes": 28672,
+            "ResidentSharedBytes": 356352,
+            "Regions": 10
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "apphelp.dll",
+            "CommittedBytes": 655360,
+            "ResidentBytes": 409600,
+            "ResidentPrivateBytes": 16384,
+            "ResidentSharedBytes": 393216,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "uxtheme.dll",
+            "CommittedBytes": 700416,
+            "ResidentBytes": 389120,
+            "ResidentPrivateBytes": 24576,
+            "ResidentSharedBytes": 364544,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "DXCore.dll",
+            "CommittedBytes": 307200,
+            "ResidentBytes": 286720,
+            "ResidentPrivateBytes": 20480,
+            "ResidentSharedBytes": 266240,
+            "Regions": 8
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "dxgi.dll",
+            "CommittedBytes": 1327104,
+            "ResidentBytes": 741376,
+            "ResidentPrivateBytes": 28672,
+            "ResidentSharedBytes": 712704,
+            "Regions": 10
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "dwmapi.dll",
+            "CommittedBytes": 192512,
+            "ResidentBytes": 90112,
+            "ResidentPrivateBytes": 20480,
+            "ResidentSharedBytes": 69632,
+            "Regions": 8
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "windows.storage.dll",
+            "CommittedBytes": 9179136,
+            "ResidentBytes": 1163264,
+            "ResidentPrivateBytes": 69632,
+            "ResidentSharedBytes": 1093632,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "profext.dll",
+            "CommittedBytes": 200704,
+            "ResidentBytes": 118784,
+            "ResidentPrivateBytes": 20480,
+            "ResidentSharedBytes": 98304,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "kernel.appcore.dll",
+            "CommittedBytes": 114688,
+            "ResidentBytes": 65536,
+            "ResidentPrivateBytes": 16384,
+            "ResidentSharedBytes": 49152,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "userenv.dll",
+            "CommittedBytes": 217088,
+            "ResidentBytes": 94208,
+            "ResidentPrivateBytes": 16384,
+            "ResidentSharedBytes": 77824,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "cryptsp.dll",
+            "CommittedBytes": 114688,
+            "ResidentBytes": 61440,
+            "ResidentPrivateBytes": 12288,
+            "ResidentSharedBytes": 49152,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "cfgmgr32.dll",
+            "CommittedBytes": 339968,
+            "ResidentBytes": 126976,
+            "ResidentPrivateBytes": 20480,
+            "ResidentSharedBytes": 106496,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "sxs.dll",
+            "CommittedBytes": 667648,
+            "ResidentBytes": 139264,
+            "ResidentPrivateBytes": 12288,
+            "ResidentSharedBytes": 126976,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "umpdc.dll",
+            "CommittedBytes": 90112,
+            "ResidentBytes": 45056,
+            "ResidentPrivateBytes": 12288,
+            "ResidentSharedBytes": 32768,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "powrprof.dll",
+            "CommittedBytes": 389120,
+            "ResidentBytes": 69632,
+            "ResidentPrivateBytes": 12288,
+            "ResidentSharedBytes": 57344,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "bcrypt.dll",
+            "CommittedBytes": 176128,
+            "ResidentBytes": 126976,
+            "ResidentPrivateBytes": 12288,
+            "ResidentSharedBytes": 114688,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "profapi.dll",
+            "CommittedBytes": 172032,
+            "ResidentBytes": 151552,
+            "ResidentPrivateBytes": 12288,
+            "ResidentSharedBytes": 139264,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "win32u.dll",
+            "CommittedBytes": 159744,
+            "ResidentBytes": 151552,
+            "ResidentPrivateBytes": 8192,
+            "ResidentSharedBytes": 143360,
+            "Regions": 5
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "crypt32.dll",
+            "CommittedBytes": 1568768,
+            "ResidentBytes": 372736,
+            "ResidentPrivateBytes": 45056,
+            "ResidentSharedBytes": 327680,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "msvcp_win.dll",
+            "CommittedBytes": 671744,
+            "ResidentBytes": 352256,
+            "ResidentPrivateBytes": 32768,
+            "ResidentSharedBytes": 319488,
+            "Regions": 8
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "ucrtbase.dll",
+            "CommittedBytes": 1363968,
+            "ResidentBytes": 712704,
+            "ResidentPrivateBytes": 20480,
+            "ResidentSharedBytes": 692224,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "bcryptprimitives.dll",
+            "CommittedBytes": 708608,
+            "ResidentBytes": 172032,
+            "ResidentPrivateBytes": 12288,
+            "ResidentSharedBytes": 159744,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "gdi32full.dll",
+            "CommittedBytes": 1220608,
+            "ResidentBytes": 323584,
+            "ResidentPrivateBytes": 32768,
+            "ResidentSharedBytes": 290816,
+            "Regions": 8
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "KernelBase.dll",
+            "CommittedBytes": 4235264,
+            "ResidentBytes": 1138688,
+            "ResidentPrivateBytes": 49152,
+            "ResidentSharedBytes": 1089536,
+            "Regions": 9
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "gdi32.dll",
+            "CommittedBytes": 180224,
+            "ResidentBytes": 163840,
+            "ResidentPrivateBytes": 16384,
+            "ResidentSharedBytes": 147456,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "kernel32.dll",
+            "CommittedBytes": 835584,
+            "ResidentBytes": 405504,
+            "ResidentPrivateBytes": 28672,
+            "ResidentSharedBytes": 376832,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "imm32.dll",
+            "CommittedBytes": 204800,
+            "ResidentBytes": 81920,
+            "ResidentPrivateBytes": 12288,
+            "ResidentSharedBytes": 69632,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "combase.dll",
+            "CommittedBytes": 3825664,
+            "ResidentBytes": 2105344,
+            "ResidentPrivateBytes": 40960,
+            "ResidentSharedBytes": 2064384,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "oleaut32.dll",
+            "CommittedBytes": 892928,
+            "ResidentBytes": 356352,
+            "ResidentPrivateBytes": 24576,
+            "ResidentSharedBytes": 331776,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "advapi32.dll",
+            "CommittedBytes": 770048,
+            "ResidentBytes": 184320,
+            "ResidentPrivateBytes": 28672,
+            "ResidentSharedBytes": 155648,
+            "Regions": 8
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "ole32.dll",
+            "CommittedBytes": 1679360,
+            "ResidentBytes": 376832,
+            "ResidentPrivateBytes": 24576,
+            "ResidentSharedBytes": 352256,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "user32.dll",
+            "CommittedBytes": 1961984,
+            "ResidentBytes": 602112,
+            "ResidentPrivateBytes": 32768,
+            "ResidentSharedBytes": 569344,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "sechost.dll",
+            "CommittedBytes": 692224,
+            "ResidentBytes": 196608,
+            "ResidentPrivateBytes": 28672,
+            "ResidentSharedBytes": 167936,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "shell32.dll",
+            "CommittedBytes": 8065024,
+            "ResidentBytes": 696320,
+            "ResidentPrivateBytes": 73728,
+            "ResidentSharedBytes": 622592,
+            "Regions": 8
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "msctf.dll",
+            "CommittedBytes": 1425408,
+            "ResidentBytes": 368640,
+            "ResidentPrivateBytes": 28672,
+            "ResidentSharedBytes": 339968,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "msvcrt.dll",
+            "CommittedBytes": 696320,
+            "ResidentBytes": 237568,
+            "ResidentPrivateBytes": 24576,
+            "ResidentSharedBytes": 212992,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "rpcrt4.dll",
+            "CommittedBytes": 1150976,
+            "ResidentBytes": 712704,
+            "ResidentPrivateBytes": 20480,
+            "ResidentSharedBytes": 692224,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "shlwapi.dll",
+            "CommittedBytes": 430080,
+            "ResidentBytes": 155648,
+            "ResidentPrivateBytes": 20480,
+            "ResidentSharedBytes": 135168,
+            "Regions": 6
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "SHCore.dll",
+            "CommittedBytes": 1019904,
+            "ResidentBytes": 192512,
+            "ResidentPrivateBytes": 28672,
+            "ResidentSharedBytes": 163840,
+            "Regions": 9
+          },
+          {
+            "Kind": "image",
+            "Protection": null,
+            "File": "ntdll.dll",
+            "CommittedBytes": 2543616,
+            "ResidentBytes": 2043904,
+            "ResidentPrivateBytes": 53248,
+            "ResidentSharedBytes": 1990656,
+            "Regions": 6
+          }
+        ],
+        "Modules": [
+          {
+            "Name": "earcontrol-wgpu-probe.exe",
+            "Path": "earcontrol-wgpu-probe.exe",
+            "ImageVirtualBytes": 3481600
+          },
+          {
+            "Name": "ntdll.dll",
+            "Path": "ntdll.dll",
+            "ImageVirtualBytes": 2539520
+          },
+          {
+            "Name": "KERNEL32.DLL",
+            "Path": "KERNEL32.DLL",
+            "ImageVirtualBytes": 831488
+          },
+          {
+            "Name": "KERNELBASE.dll",
+            "Path": "KERNELBASE.dll",
+            "ImageVirtualBytes": 4231168
+          },
+          {
+            "Name": "apphelp.dll",
+            "Path": "apphelp.dll",
+            "ImageVirtualBytes": 651264
+          },
+          {
+            "Name": "oleaut32.dll",
+            "Path": "oleaut32.dll",
+            "ImageVirtualBytes": 888832
+          },
+          {
+            "Name": "msvcp_win.dll",
+            "Path": "msvcp_win.dll",
+            "ImageVirtualBytes": 667648
+          },
+          {
+            "Name": "ucrtbase.dll",
+            "Path": "ucrtbase.dll",
+            "ImageVirtualBytes": 1359872
+          },
+          {
+            "Name": "combase.dll",
+            "Path": "combase.dll",
+            "ImageVirtualBytes": 3821568
+          },
+          {
+            "Name": "RPCRT4.dll",
+            "Path": "RPCRT4.dll",
+            "ImageVirtualBytes": 1146880
+          },
+          {
+            "Name": "user32.dll",
+            "Path": "user32.dll",
+            "ImageVirtualBytes": 1957888
+          },
+          {
+            "Name": "win32u.dll",
+            "Path": "win32u.dll",
+            "ImageVirtualBytes": 159744
+          },
+          {
+            "Name": "GDI32.dll",
+            "Path": "GDI32.dll",
+            "ImageVirtualBytes": 176128
+          },
+          {
+            "Name": "gdi32full.dll",
+            "Path": "gdi32full.dll",
+            "ImageVirtualBytes": 1216512
+          },
+          {
+            "Name": "uiautomationcore.dll",
+            "Path": "uiautomationcore.dll",
+            "ImageVirtualBytes": 4325376
+          },
+          {
+            "Name": "ole32.dll",
+            "Path": "ole32.dll",
+            "ImageVirtualBytes": 1675264
+          },
+          {
+            "Name": "shell32.dll",
+            "Path": "shell32.dll",
+            "ImageVirtualBytes": 8060928
+          },
+          {
+            "Name": "bcryptprimitives.dll",
+            "Path": "bcryptprimitives.dll",
+            "ImageVirtualBytes": 704512
+          },
+          {
+            "Name": "ADVAPI32.dll",
+            "Path": "ADVAPI32.dll",
+            "ImageVirtualBytes": 765952
+          },
+          {
+            "Name": "msvcrt.dll",
+            "Path": "msvcrt.dll",
+            "ImageVirtualBytes": 692224
+          },
+          {
+            "Name": "sechost.dll",
+            "Path": "sechost.dll",
+            "ImageVirtualBytes": 688128
+          },
+          {
+            "Name": "imm32.dll",
+            "Path": "imm32.dll",
+            "ImageVirtualBytes": 200704
+          },
+          {
+            "Name": "uxtheme.dll",
+            "Path": "uxtheme.dll",
+            "ImageVirtualBytes": 696320
+          },
+          {
+            "Name": "dwmapi.dll",
+            "Path": "dwmapi.dll",
+            "ImageVirtualBytes": 188416
+          },
+          {
+            "Name": "VCRUNTIME140.dll",
+            "Path": "VCRUNTIME140.dll",
+            "ImageVirtualBytes": 122880
+          },
+          {
+            "Name": "shcore.dll",
+            "Path": "shcore.dll",
+            "ImageVirtualBytes": 1015808
+          },
+          {
+            "Name": "MSCTF.dll",
+            "Path": "MSCTF.dll",
+            "ImageVirtualBytes": 1421312
+          },
+          {
+            "Name": "kernel.appcore.dll",
+            "Path": "kernel.appcore.dll",
+            "ImageVirtualBytes": 110592
+          },
+          {
+            "Name": "dataexchange.dll",
+            "Path": "dataexchange.dll",
+            "ImageVirtualBytes": 372736
+          },
+          {
+            "Name": "twinapi.appcore.dll",
+            "Path": "twinapi.appcore.dll",
+            "ImageVirtualBytes": 2424832
+          },
+          {
+            "Name": "explorerframe.dll",
+            "Path": "explorerframe.dll",
+            "ImageVirtualBytes": 3305472
+          },
+          {
+            "Name": "SHLWAPI.dll",
+            "Path": "SHLWAPI.dll",
+            "ImageVirtualBytes": 425984
+          },
+          {
+            "Name": "powrprof.dll",
+            "Path": "powrprof.dll",
+            "ImageVirtualBytes": 385024
+          },
+          {
+            "Name": "UMPDC.dll",
+            "Path": "UMPDC.dll",
+            "ImageVirtualBytes": 86016
+          },
+          {
+            "Name": "d3d12.dll",
+            "Path": "d3d12.dll",
+            "ImageVirtualBytes": 143360
+          },
+          {
+            "Name": "dxgi.dll",
+            "Path": "dxgi.dll",
+            "ImageVirtualBytes": 1323008
+          },
+          {
+            "Name": "dxcore.dll",
+            "Path": "dxcore.dll",
+            "ImageVirtualBytes": 303104
+          },
+          {
+            "Name": "CRYPT32.dll",
+            "Path": "CRYPT32.dll",
+            "ImageVirtualBytes": 1564672
+          },
+          {
+            "Name": "directxdatabasehelper.dll",
+            "Path": "directxdatabasehelper.dll",
+            "ImageVirtualBytes": 389120
+          },
+          {
+            "Name": "cfgmgr32.dll",
+            "Path": "cfgmgr32.dll",
+            "ImageVirtualBytes": 335872
+          },
+          {
+            "Name": "d3dcompiler_47.dll",
+            "Path": "d3dcompiler_47.dll",
+            "ImageVirtualBytes": 4714496
+          },
+          {
+            "Name": "cryptsp.dll",
+            "Path": "cryptsp.dll",
+            "ImageVirtualBytes": 110592
+          },
+          {
+            "Name": "D3D12Core.dll",
+            "Path": "D3D12Core.dll",
+            "ImageVirtualBytes": 3477504
+          },
+          {
+            "Name": "amdxc64.dll",
+            "Path": "amdxc64.dll",
+            "ImageVirtualBytes": 67739648
+          },
+          {
+            "Name": "WINMM.dll",
+            "Path": "WINMM.dll",
+            "ImageVirtualBytes": 221184
+          },
+          {
+            "Name": "VERSION.dll",
+            "Path": "VERSION.dll",
+            "ImageVirtualBytes": 45056
+          },
+          {
+            "Name": "amdihk64.dll",
+            "Path": "amdihk64.dll",
+            "ImageVirtualBytes": 217088
+          },
+          {
+            "Name": "BCrypt.dll",
+            "Path": "BCrypt.dll",
+            "ImageVirtualBytes": 172032
+          },
+          {
+            "Name": "windows.storage.dll",
+            "Path": "windows.storage.dll",
+            "ImageVirtualBytes": 9175040
+          },
+          {
+            "Name": "profapi.dll",
+            "Path": "profapi.dll",
+            "ImageVirtualBytes": 167936
+          },
+          {
+            "Name": "D3DSCache.dll",
+            "Path": "D3DSCache.dll",
+            "ImageVirtualBytes": 913408
+          },
+          {
+            "Name": "USERENV.dll",
+            "Path": "USERENV.dll",
+            "ImageVirtualBytes": 212992
+          },
+          {
+            "Name": "profext.dll",
+            "Path": "profext.dll",
+            "ImageVirtualBytes": 196608
+          },
+          {
+            "Name": "d3d10warp.dll",
+            "Path": "d3d10warp.dll",
+            "ImageVirtualBytes": 5963776
+          },
+          {
+            "Name": "dxilconv.dll",
+            "Path": "dxilconv.dll",
+            "ImageVirtualBytes": 1458176
+          },
+          {
+            "Name": "dcomp.dll",
+            "Path": "dcomp.dll",
+            "ImageVirtualBytes": 2310144
+          },
+          {
+            "Name": "Microsoft.Internal.WarpPal.dll",
+            "Path": "Microsoft.Internal.WarpPal.dll",
+            "ImageVirtualBytes": 106496
+          },
+          {
+            "Name": "sxs.dll",
+            "Path": "sxs.dll",
+            "ImageVirtualBytes": 663552
+          },
+          {
+            "Name": "OLEACC.dll",
+            "Path": "OLEACC.dll",
+            "ImageVirtualBytes": 479232
+          },
+          {
+            "Name": "IconCodecService.dll",
+            "Path": "IconCodecService.dll",
+            "ImageVirtualBytes": 45056
+          },
+          {
+            "Name": "WindowsCodecs.dll",
+            "Path": "WindowsCodecs.dll",
+            "ImageVirtualBytes": 2347008
+          },
+          {
+            "Name": "threadpoolwinrt.dll",
+            "Path": "threadpoolwinrt.dll",
+            "ImageVirtualBytes": 90112
+          }
+        ]
+      },
+      "stdout": "adapter=AdapterInfo { name: \"AMD Radeon 780M Graphics\", vendor: 4098, device: 5567, device_type: IntegratedGpu, driver: \"31.0.14084.3001\", driver_info: \"\", backend: Dx12 };memory_policy=Performance;compiler=FXC\n",
+      "stderr": ""
+    }
+  ],
+  "sanitization": "Process IDs removed. Mapped-file and module paths reduced to basenames. Numeric measurements, executable hashes and adapter output unchanged. No settings contents were collected."
+}

@@ -1,38 +1,58 @@
-use std::collections::HashSet;
-
 /// Parses one key chord into Windows virtual-key codes in press order.
 /// The caller releases keys in reverse order. `None` is an explicit no-op.
 pub fn parse_shortcut(text: &str) -> Result<Vec<u16>, String> {
+    parse_chord(text).map(|(keys, length)| keys[..length].to_vec())
+}
+
+/// Validate without allocating a key vector that the caller would discard.
+pub fn validate_shortcut(text: &str) -> Result<(), String> {
+    parse_chord(text).map(|_| ())
+}
+
+fn parse_chord(text: &str) -> Result<([u16; 5], usize), String> {
     let text = text.trim();
     if text.is_empty() {
         return Err("Choose a key, enter a shortcut such as Ctrl+F5, or use None.".into());
     }
     if text.eq_ignore_ascii_case("none") {
-        return Ok(Vec::new());
+        return Ok(([0; 5], 0));
     }
     if text.len() > 100 {
         return Err("A keyboard shortcut must be 100 characters or fewer.".into());
     }
 
-    let mut modifiers = HashSet::new();
+    // Shortcuts are bounded above. ASCII case folding preserves UTF-8 and
+    // avoids allocating a new String for every part of each validated chord.
+    let mut uppercase = [0; 100];
+    for (out, byte) in uppercase.iter_mut().zip(text.bytes()) {
+        *out = byte.to_ascii_uppercase();
+    }
+    let uppercase = std::str::from_utf8(&uppercase[..text.len()]).unwrap();
+    if !uppercase.as_bytes().contains(&b'+') {
+        if let Some(key) = main_virtual_key(uppercase) {
+            return Ok(([key, 0, 0, 0, 0], 1));
+        }
+    }
+    let mut modifiers = 0_u8;
     let mut main_key = None;
-    for part in text.split('+').map(str::trim) {
-        let upper = part.to_ascii_uppercase();
-        let modifier = match upper.as_str() {
-            "CTRL" | "CONTROL" => Some((0x11, "Ctrl")),
-            "ALT" => Some((0x12, "Alt")),
-            "SHIFT" => Some((0x10, "Shift")),
-            "WIN" | "WINDOWS" | "META" => Some((0x5B, "Win")),
+    for (index, upper) in uppercase.split('+').map(str::trim).enumerate() {
+        let modifier = match upper {
+            "CTRL" | "CONTROL" => Some((1, "Ctrl")),
+            "ALT" => Some((2, "Alt")),
+            "SHIFT" => Some((4, "Shift")),
+            "WIN" | "WINDOWS" | "META" => Some((8, "Win")),
             _ => None,
         };
-        if let Some((key, name)) = modifier {
-            if !modifiers.insert(key) {
+        if let Some((bit, name)) = modifier {
+            if modifiers & bit != 0 {
                 return Err(format!("{name} appears more than once."));
             }
+            modifiers |= bit;
             continue;
         }
 
-        let key = main_virtual_key(&upper).ok_or_else(|| {
+        let key = main_virtual_key(upper).ok_or_else(|| {
+            let part = text.split('+').nth(index).unwrap().trim();
             format!("Unknown key '{part}'. Use letters, digits, F1 to F24, or navigation keys.")
         })?;
         if main_key.replace(key).is_some() {
@@ -43,12 +63,16 @@ pub fn parse_shortcut(text: &str) -> Result<Vec<u16>, String> {
     }
 
     let main_key = main_key.ok_or("Add a main key after the modifier, such as Ctrl+F5.")?;
-    let mut keys: Vec<u16> = [0x11, 0x12, 0x10, 0x5B]
-        .into_iter()
-        .filter(|key| modifiers.contains(key))
-        .collect();
-    keys.push(main_key);
-    Ok(keys)
+    let mut keys = [0; 5];
+    let mut length = 0;
+    for (bit, key) in [(1, 0x11), (2, 0x12), (4, 0x10), (8, 0x5B)] {
+        if modifiers & bit != 0 {
+            keys[length] = key;
+            length += 1;
+        }
+    }
+    keys[length] = main_key;
+    Ok((keys, length + 1))
 }
 
 fn main_virtual_key(key: &str) -> Option<u16> {
@@ -77,15 +101,14 @@ fn main_virtual_key(key: &str) -> Option<u16> {
     if bytes.len() == 1 && bytes[0].is_ascii_alphanumeric() {
         return Some(bytes[0] as u16);
     }
-    if let Some(number) = key
-        .strip_prefix('F')
-        .and_then(|number| number.parse::<u16>().ok())
-    {
-        if (1..=24).contains(&number) && key == format!("F{number}") {
-            return Some(0x70 + number - 1);
+    let number = match bytes {
+        [b'F', digit @ b'1'..=b'9'] => u16::from(digit - b'0'),
+        [b'F', tens @ b'1'..=b'2', ones @ b'0'..=b'9'] => {
+            u16::from(tens - b'0') * 10 + u16::from(ones - b'0')
         }
-    }
-    None
+        _ => return None,
+    };
+    (number <= 24).then_some(0x70 + number - 1)
 }
 
 #[cfg(test)]
@@ -112,6 +135,20 @@ mod tests {
         assert_eq!(parse_shortcut("PageDown").unwrap(), vec![0x22]);
         assert_eq!(parse_shortcut("Delete").unwrap(), vec![0x2E]);
         assert!(parse_shortcut(" none ").unwrap().is_empty());
+    }
+
+    #[test]
+    fn all_function_keys_and_unicode_whitespace_preserve_chord_order() {
+        for number in 1..=24 {
+            assert_eq!(
+                parse_shortcut(&format!("win+shift+alt+ctrl+f{number}")).unwrap(),
+                vec![0x11, 0x12, 0x10, 0x5B, 0x70 + number - 1]
+            );
+        }
+        assert_eq!(
+            parse_shortcut("\u{2003}Ctrl\u{2003}+\u{2003}a").unwrap(),
+            vec![0x11, 0x41]
+        );
     }
 
     #[test]

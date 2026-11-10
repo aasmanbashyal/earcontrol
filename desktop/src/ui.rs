@@ -98,6 +98,7 @@ pub struct EarControl {
     practice_open: bool,
     practice_pending: bool,
     practice: Practice,
+    last_render_state: Option<(View, bool, bool)>,
 }
 
 impl EarControl {
@@ -146,6 +147,7 @@ impl EarControl {
             practice_open: false,
             practice_pending: false,
             practice: Practice::default(),
+            last_render_state: None,
         }
     }
     fn profile_index(&self) -> usize {
@@ -263,6 +265,20 @@ impl EarControl {
         ctx.send_viewport_cmd_to(self.practice.viewport_id(), egui::ViewportCommand::Focus);
     }
 
+    fn draft_snapshot_for_frame(&mut self, ctx: &egui::Context) -> Option<Settings> {
+        let state = (self.view, self.profiles_open, self.import_pending.is_some());
+        // Draft is owned exclusively by GUI handlers. Device/media workers only
+        // update the separate runtime, so idle repaints cannot edit this value.
+        // Still inspect the first pass of every screen/modal (widgets may clamp
+        // values), all input including UIA, and ongoing held-key/pointer gestures.
+        let can_edit = self.last_render_state != Some(state)
+            || ctx.input(|input| {
+                !input.events.is_empty() || input.pointer.any_down() || !input.keys_down.is_empty()
+            });
+        self.last_render_state = Some(state);
+        can_edit.then(|| self.draft.clone())
+    }
+
     pub fn show(&mut self, ctx: &egui::Context) {
         ctx.set_theme(match self.draft.theme.as_str() {
             "light" => egui::ThemePreference::Light,
@@ -284,7 +300,7 @@ impl EarControl {
             }
         }
         self.capture_shortcut(ctx);
-        let before = self.draft.clone();
+        let before = self.draft_snapshot_for_frame(ctx);
         let status = self.runtime.status();
         let active = status.mode != "idle" || status.running_macro;
         if self.recording.is_none()
@@ -755,7 +771,7 @@ impl EarControl {
             .show(ctx, |ui| {
                 ui.spacing_mut().scroll.floating_allocated_width = 8.0;
                 egui::ScrollArea::vertical()
-                    .id_salt(("content", format!("{:?}", self.view)))
+                    .id_salt(("content", self.view as u8))
                     .auto_shrink([false, false])
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
@@ -823,7 +839,7 @@ impl EarControl {
 
         self.profile_dialog(ctx);
         self.import_dialog(ctx);
-        if self.draft != before {
+        if before.as_ref().is_some_and(|before| self.draft != *before) {
             self.validation = model::validate_settings(&self.draft).err();
             if status.mode == "control" || status.running_macro {
                 let result = self.runtime.stop();
@@ -1056,10 +1072,8 @@ impl EarControl {
 
                 ui.separator();
 
-                let events = self.runtime.events();
-
-                if let Some(event) = events.iter().find(|e| model::TRIGGERS.contains(&e.trigger.as_str())) {
-                    event_row(ui, event, false);
+                if let Some(event) = self.runtime.latest_command_event() {
+                    event_row(ui, &event, false);
                 } else {
                     let monitoring = self.runtime.status().mode == "monitor";
 
@@ -2175,17 +2189,7 @@ fn section_divider(ui: &mut egui::Ui) {
     let p = Palette::get(ui.ctx());
     let (r, _) =
         ui.allocate_exact_size(egui::vec2(ui.available_width(), 1.0), egui::Sense::hover());
-    let mut x = r.left();
-    while x < r.right() {
-        ui.painter().line_segment(
-            [
-                egui::pos2(x, r.top()),
-                egui::pos2((x + 3.0).min(r.right()), r.top()),
-            ],
-            egui::Stroke::new(1.0_f32, p.line),
-        );
-        x += 6.0;
-    }
+    design::dashed_line(ui.painter(), r.left(), r.right(), r.top(), p.line);
     ui.add_space(17.0);
 }
 fn empty_state(ui: &mut egui::Ui, icon: Icon, title: &str, detail: &str) {
@@ -2449,6 +2453,95 @@ pub fn recorded_shortcut(key: egui::Key, modifiers: egui::Modifiers, win: bool) 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn steady_frames_skip_draft_copy_but_uia_edits_cancel_pending_macro() {
+        use std::time::Instant;
+        use windows::{
+            core::w,
+            Win32::UI::WindowsAndMessaging::{
+                CreateWindowExW, DestroyWindow, WINDOW_EX_STYLE, WS_POPUP,
+            },
+        };
+        let dir = tempfile::tempdir().unwrap();
+        let runtime = AppState::new(dir.path().join("profiles.json"), || {});
+        let mut app = EarControl::from_runtime(Arc::clone(&runtime));
+        let ctx = egui::Context::default();
+        configure_style(&ctx);
+        ctx.enable_accesskit();
+        let output = frame(&mut app, &ctx, Vec::new());
+        let tree = output.platform_output.accesskit_update.unwrap();
+        let toggle = tree
+            .nodes
+            .iter()
+            .find(|(_, node)| node.label() == Some("Enable Next track"))
+            .unwrap()
+            .0;
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            assert!(
+                app.draft_snapshot_for_frame(ctx).is_none(),
+                "An idle repaint must not copy every profile"
+            );
+        });
+        // A hidden, owned target makes preview cancellation testable without ever
+        // allowing the countdown to send input to another application.
+        let hwnd = unsafe {
+            CreateWindowExW(
+                WINDOW_EX_STYLE::default(),
+                w!("STATIC"),
+                w!("EarControl cancellation test"),
+                WS_POPUP,
+                0,
+                0,
+                20,
+                20,
+                None,
+                None,
+                None,
+                None,
+            )
+            .unwrap()
+        };
+        let target = TargetWindow {
+            handle: hwnd.0 as isize,
+            process_id: std::process::id(),
+            title: "Test".into(),
+        };
+        let mapping_id = app.draft.profiles[0].mappings[0].id.clone();
+        runtime.preview(&mapping_id, target).unwrap();
+        assert!(runtime.status().running_macro);
+        let _ = frame(
+            &mut app,
+            &ctx,
+            vec![egui::Event::AccessKitActionRequest(
+                egui::accesskit::ActionRequest {
+                    action: egui::accesskit::Action::Click,
+                    target: toggle,
+                    data: None,
+                },
+            )],
+        );
+        assert!(
+            !app.draft.profiles[0].mappings[1].enabled,
+            "UIA edits must still apply"
+        );
+        let deadline = Instant::now() + Duration::from_millis(500);
+        while runtime.status().running_macro && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        unsafe {
+            DestroyWindow(hwnd).unwrap();
+        }
+        assert!(
+            !runtime.status().running_macro,
+            "Editing must cancel the countdown immediately"
+        );
+        assert!(runtime
+            .events()
+            .iter()
+            .any(|event| event.outcome == "cancelled"));
+        assert!(app.validation.is_none());
+    }
 
     #[test]
     fn unchanged_export_and_cancelled_import_do_not_touch_runtime_or_saved_settings() {

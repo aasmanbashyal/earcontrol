@@ -20,7 +20,7 @@ foreach ($name in $expected) {
 $archive = [IO.Compression.ZipFile]::OpenRead((Join-Path "$projectRoot/dist" "EarControl-$version-win-x64.zip"))
 try {
     $files = @($archive.Entries | Where-Object { $_.Name -ne '' })
-    $archiveExpected = @("EarControl-$version/EarControl.exe", "EarControl-$version/README.md", "EarControl-$version/LICENSE")
+    $archiveExpected = @("EarControl-$version/EarControl.exe", "EarControl-$version/README.md", "EarControl-$version/LICENSE", "EarControl-$version/THIRD-PARTY-NOTICES.txt")
     if ($files.Count -ne $archiveExpected.Count) { throw 'Unexpected portable ZIP contents.' }
     foreach ($name in $archiveExpected) {
         $entry = $files | Where-Object { $_.FullName.Replace('\','/') -eq $name }

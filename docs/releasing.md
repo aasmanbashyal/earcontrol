@@ -5,7 +5,7 @@
 3. Close the release executable, then run `./scripts/windows.ps1 -Task Package` and `./scripts/verify-release.ps1`.
 4. Inspect both windows, themes, minimum size, portable ZIP and installer. Record checks actually performed. Simulated input does not establish physical headphone compatibility.
 
-`dist/` contains a versioned portable folder, ZIP, per-user NSIS installer and SHA-256 manifest. The folder contains `EarControl.exe`, README and MIT license. The manifest covers the executable inside that folder, ZIP and installer. `Build` creates only portable files; verify those with `-PortableOnly`.
+`dist/` contains a versioned portable folder, ZIP, per-user NSIS installer and SHA-256 manifest. The folder contains `EarControl.exe`, README, MIT license and third-party font notices. The manifest covers the executable inside that folder, ZIP and installer. `Build` creates only portable files; verify those with `-PortableOnly`.
 
 PowerShell in `scripts/windows.ps1` is the shared local/CI entry point. It uses locked Cargo builds and validates version agreement. NSIS is a build tool only. The installer requires no WebView2 download and runs without administrator privileges. Uninstall removes application files and keeps profiles in the existing roaming configuration directory.
 

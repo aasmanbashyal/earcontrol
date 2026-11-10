@@ -36,6 +36,7 @@ try {
     Copy-Item -LiteralPath 'target\release\earcontrol.exe' -Destination (Join-Path $portableDirectory 'EarControl.exe')
     Copy-Item -LiteralPath 'docs\portable-readme.md' -Destination (Join-Path $portableDirectory 'README.md')
     Copy-Item -LiteralPath 'LICENSE' -Destination $portableDirectory
+    Copy-Item -LiteralPath 'desktop\assets\THIRD-PARTY-NOTICES.txt' -Destination (Join-Path $portableDirectory 'THIRD-PARTY-NOTICES.txt')
     $portableZip = Join-Path $projectRoot "dist\EarControl-$releaseVersion-win-x64.zip"
     Compress-Archive -Path $portableDirectory -DestinationPath $portableZip -Force
     $artifacts = @((Join-Path $portableDirectory 'EarControl.exe'), $portableZip)

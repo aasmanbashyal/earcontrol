@@ -8,6 +8,9 @@
 - Restored the legacy single-instance lock so 2.x and 3.x copies cannot publish competing EarControl media sessions.
 - Added Rust UI/state tests, repeatable release benchmarks, Cargo/PowerShell CI and a per-user NSIS installer.
 - Recreated the original window controls and neutral themes in Rust.
+- Reduced the executable and font memory by using cached Windows font mappings and a small emergency font. Removed unused URL-opening and image-clipboard dependencies while retaining text clipboard and accessibility support.
+- Reduced allocations in shortcut validation, duplicate filtering, Unicode macro dispatch and idle UI frames. Cached decorative line geometry without changing its rendered output.
+- Recorded before-and-after Rust benchmarks and rejected compiler and renderer changes that worsened measured workloads.
 
 ## 2.1.2
 
