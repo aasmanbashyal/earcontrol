@@ -21,7 +21,7 @@ Google Slides and PowerPoint start with these mappings:
 | Previous track | Left | Previous slide |
 | Stop playback | Escape | Exit presentation |
 
-The Everyday profile supplies general navigation shortcuts. The menu beside the profile selector creates, duplicates, renames, and removes profiles. Edits remain drafts until saved. Starting control or testing saves pending changes first; editing while controlling or testing cancels the active session.
+The Everyday profile supplies general navigation shortcuts. **Manage profiles** below the profile selector creates, duplicates, renames, and removes profiles. Edits remain drafts until saved. Starting control or testing saves pending changes first; editing while controlling or testing cancels the active session.
 
 **Buttons** lets you enable each command and choose its action. **Macros** edits its name and ordered steps:
 
@@ -40,6 +40,8 @@ Settings includes light/dark/system themes, media-key capture, repeat delay, and
 Capture uses Windows System Media Transport Controls and optional standard media keys. It is not tied to Redmi or another brand. Headphones sending supported play/pause, next, previous, or stop commands can be mapped. Optional volume up/down/mute mappings require Windows keyboard media-key events and are disabled by default.
 
 Windows selects which media session receives headphone commands. Pause competing media apps and select EarControl in Windows media controls if the monitor stays empty. A browser video can take over that session. EarControl does not play audio or use the microphone.
+
+The native port shares the older app's single-instance lock, so launching a second copy brings the existing app forward. Close any earlier test build before testing the new executable. Monitor's Button check and Activity show received commands; a connected device entry alone does not confirm that Windows routed a gesture to EarControl.
 
 EarControl recovers held-button tracking when Windows reports a device change or wakes from sleep, and when capture restarts. A device that disconnects without releasing its media key no longer leaves that button suppressed in the next session. Duplicate filtering uses the time Windows input was captured, so a delayed worker cannot turn two reports of one press into two actions.
 

@@ -1,6 +1,6 @@
-# EarControl 2.1.2 for Windows
+# EarControl 3.0.0 for Windows
 
-Headphone buttons, shortcuts, and macros for Windows 10/11 x64. Microsoft Edge WebView2 Runtime is required. The installer checks for it; the portable app uses the installed runtime. No .NET or Rust installation is needed.
+Headphone buttons, shortcuts, and macros for Windows 10/11 x64 with a working OpenGL graphics driver. Both windows are native Rust UI. No WebView2, Bun, Node, .NET or Rust installation is needed.
 
 ## Open the app
 

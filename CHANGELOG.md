@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.0.0, native Rust port
+
+- Ported both application windows to egui/eframe, including profile editing, macro recording and testing, devices, activity, settings and practice controls.
+- Removed React, TypeScript, Vite, Tauri and WebView2 from the application build and runtime.
+- Preserved the version-2 JSON settings format, storage location and Windows input safeguards.
+- Restored the legacy single-instance lock so 2.x and 3.x copies cannot publish competing EarControl media sessions.
+- Added Rust UI/state tests, repeatable release benchmarks, Cargo/PowerShell CI and a per-user NSIS installer.
+- Recreated the original window controls and neutral themes in Rust.
+
 ## 2.1.2
 
 - Root Bun commands for development, checks, packaging, and release verification.
