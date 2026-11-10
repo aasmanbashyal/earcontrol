@@ -36,7 +36,7 @@ Google Slides and PowerPoint profiles start with these mappings:
 
 Create profiles for other apps. Macros combine **Shortcut**, **Delay**, and **Text** steps, with a countdown before testing and cancellation on Stop or target-focus loss. The practice deck provides slide navigation and a text field for checking mappings. Light, dark, and system themes share the same neutral controls.
 
-The [port plan](docs/rust-port-plan.md) tracks scope and acceptance checks. [Port benchmarks](docs/benchmarks.md) compare the initial native port with the previous release. [Optimization results](docs/optimization.md) measure the subsequent size, memory and CPU changes against that completed Rust build.
+The [port plan](docs/rust-port-plan.md) tracks scope and acceptance checks. [Port benchmarks](docs/benchmarks.md) compare the initial native port with the previous release. [Optimization results](docs/optimization.md) measure subsequent size, memory and CPU changes. The [full QA record](docs/qa.md) lists later fixes, physical-device checks, package hashes and remaining verification limits.
 
 Windows controls which media session receives headphone events. Pause competing media apps if Monitor stays empty. Events do not identify the earbud side, tap count, or individual headset. The device list is informational; physical compatibility depends on the headphones and driver. See [headphone support](docs/user-guide.md#headphone-support).
 

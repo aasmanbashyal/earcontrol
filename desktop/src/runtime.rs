@@ -177,7 +177,8 @@ impl AppState {
             return;
         }
         let settings = self.settings.lock().unwrap().clone();
-        if !self.last_events.lock().unwrap().accept(
+        if !self.accept_report(
+            session.generation,
             &trigger,
             &source,
             captured_at,
@@ -253,6 +254,27 @@ impl AppState {
             return;
         }
         self.launch_macro(mapping, target, session.generation, source, 0);
+    }
+
+    fn accept_report(
+        &self,
+        generation: u64,
+        trigger: &str,
+        source: &str,
+        captured_at: Instant,
+        cooldown_ms: u64,
+    ) -> bool {
+        // A callback can pause after checking the native generation. Serialize
+        // this final check and dedup update with Stop's runtime invalidation so
+        // an old callback cannot repopulate the next session's empty cooldown.
+        let session = self.session.lock().unwrap();
+        if session.generation != generation || session.mode == "idle" {
+            return false;
+        }
+        self.last_events
+            .lock()
+            .unwrap()
+            .accept(trigger, source, captured_at, cooldown_ms)
     }
 
     fn ensure_target(&self, target: &TargetWindow, generation: u64) -> Result<(), String> {
@@ -562,6 +584,38 @@ mod tests {
         assert_eq!(runtime.status().mode, "idle");
         assert!(runtime.latest_capture_command_event().is_none());
         assert!(!runtime.capture_health().input_thread_alive);
+    }
+
+    #[test]
+    fn stopped_callback_cannot_poison_the_restarted_capture_cooldown() {
+        let dir = tempfile::tempdir().unwrap();
+        let runtime = AppState::new(dir.path().join("profiles.json"), || {});
+        let captured_at = Instant::now();
+        runtime.session.lock().unwrap().mode = "monitor".into();
+        let old_generation = runtime.session.lock().unwrap().generation;
+        assert!(runtime.accept_report(old_generation, "next", "test", captured_at, 800));
+
+        // Pause a second callback after it read the old session, then finish
+        // Stop and activation of the next session before accepting that report.
+        // No native window or input delivery is needed to exercise this race.
+        runtime.stop().unwrap();
+        runtime.session.lock().unwrap().mode = "monitor".into();
+        let new_generation = runtime.session.lock().unwrap().generation;
+        assert_ne!(new_generation, old_generation);
+        assert!(!runtime.accept_report(
+            old_generation,
+            "next",
+            "test",
+            captured_at + Duration::from_millis(10),
+            800,
+        ));
+        assert!(runtime.accept_report(
+            new_generation,
+            "next",
+            "test",
+            captured_at + Duration::from_millis(20),
+            800,
+        ));
     }
 
     #[test]

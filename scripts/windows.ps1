@@ -16,7 +16,7 @@ try {
     switch ($Task) {
         'Setup' { Invoke-Cargo fetch --locked }
         'Check' { Invoke-Cargo fmt --all '--' --check; Invoke-Cargo clippy --workspace --all-targets --locked '--' -D warnings }
-        'Test' { Invoke-Cargo test --workspace --locked }
+        'Test' { Invoke-Cargo test --workspace --locked; & "$PSScriptRoot/test-release-verification.ps1" }
         'WindowsTest' { Invoke-Cargo test --locked native_windows_smoke '--' --ignored --test-threads=1 --nocapture }
         'Dev' { Invoke-Cargo run --locked }
         'Bench' { Invoke-Cargo bench --locked --bench workloads }

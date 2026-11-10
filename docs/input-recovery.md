@@ -1,6 +1,6 @@
 # Input recovery and control styling
 
-Validated locally on November 10, 2026, on `feat/rust-native-ui`, after the optimization snapshot `82d1af2`.
+Historical validation of build `87674e6` on November 10, 2026, on `feat/rust-native-ui`. See [the full QA record](qa.md) for the later Practice focus fix, physical control retest and current package hashes.
 
 ## Physical observation
 
@@ -33,7 +33,7 @@ Retry cannot force Windows to select EarControl. If another media app remains se
 
 The tested executable is 2,225,664 bytes with SHA-256 `6e40a2d9d760a33c217f08ff8c980cf8ab60d7a226d8dcf05351b2e8b4e0842f`.
 
-The portable ZIP is 1,177,545 bytes with SHA-256 `3018e626c8e8a9cc753e730e7bdae3d3f4b4504d1a05e361e42909b5f93de0e6`. The local delivery copy named `EarControl-3.0.0-input-ui-fix-win-x64.zip` is byte-identical to the normal versioned ZIP.
+The portable ZIP was 1,177,545 bytes with SHA-256 `3018e626c8e8a9cc753e730e7bdae3d3f4b4504d1a05e361e42909b5f93de0e6`. The historical `EarControl-3.0.0-input-ui-fix-win-x64.zip` delivery copy preserves that package. The normal versioned ZIP has since been rebuilt.
 
 The earlier [optimization results](optimization.md) remain tied to their original executable hash. CPU and process benchmarks were not rerun for these subsequent fixes. No release was published and no installed upgrade/uninstall cycle was tested.
 

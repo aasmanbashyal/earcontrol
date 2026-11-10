@@ -2,6 +2,12 @@
 
 ## 3.0.0, native Rust port
 
+- Prevented delayed callbacks from restoring an old cooldown after Stop or Retry input.
+- Preserved the release decision for a consumed media key held through Stop, including repeated key-down events.
+- Fixed Practice arrow-key focus and added a full-frame navigation regression. Refocusing an already-selected Practice deck now keeps control running.
+- Linked the Windows x64 release with the static CRT and added PE import checks to reject portable builds that require unbundled Visual C++ runtime DLLs.
+- Kept long import confirmations within the window, added keyboard-focus outlines and an accessible Devices shortcut name, reset scroll on page changes, and refreshed the main viewport when device scans finish.
+- Added persistence checks for the 2 MiB boundary, invalid UTF-8 and sharing-denied file replacement. Recorded 82 passing Rust tests, seven PE fixtures, native Windows smoke and physical control results, package hashes and verification limits in `docs/qa.md`.
 - Added live Windows media-routing status, per-session input diagnostics and Retry input. Restarting capture now refreshes the keyboard hook, including hooks Windows silently removed after a timeout.
 - Kept Button check feedback scoped to the current capture session, including after retry or a late macro cancellation.
 - Gave Settings a distinct gear icon, increased repeat-delay slider contrast, and enlarged text fields with consistent padding.

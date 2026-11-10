@@ -348,10 +348,13 @@ struct HookState {
 struct PressedKeys(HashMap<u32, (Option<u64>, bool)>);
 
 impl PressedKeys {
-    fn repeat(&self, key: u32, generation: u64) -> Option<bool> {
+    fn repeat(&self, key: u32, generation: u64, listening: bool) -> Option<bool> {
         self.0
             .get(&key)
-            .filter(|(seen, _)| *seen == Some(generation))
+            // Stop drains a consumed held key, including auto-repeat downs,
+            // until its up arrives. A new listening generation may accept a
+            // fresh down even if the previous device never sent a release.
+            .filter(|(seen, consumed)| *seen == Some(generation) || (!listening && *consumed))
             .map(|(_, consumed)| *consumed)
     }
 
@@ -895,13 +898,14 @@ unsafe extern "system" fn keyboard_callback(code: i32, wparam: WPARAM, lparam: L
                 match wparam.0 as u32 {
                     WM_KEYDOWN | WM_SYSKEYDOWN => {
                         let generation = state.session.generation.load(Ordering::SeqCst);
-                        if let Some(consumed) = state.pressed.repeat(input.vkCode, generation) {
+                        let listening = state.session.listening.load(Ordering::SeqCst);
+                        if let Some(consumed) =
+                            state.pressed.repeat(input.vkCode, generation, listening)
+                        {
                             return consumed;
                         }
                         let mut consume = false;
-                        if state.session.listening.load(Ordering::SeqCst)
-                            && state.session.keyboard_fallback.load(Ordering::SeqCst)
-                        {
+                        if listening && state.session.keyboard_fallback.load(Ordering::SeqCst) {
                             consume = (state.should_consume)(trigger);
                             let queued = enqueue(
                                 &state.session,
@@ -1321,12 +1325,12 @@ mod tests {
     #[test]
     fn held_media_keys_repeat_only_after_release() {
         let mut pressed = PressedKeys::default();
-        assert_eq!(pressed.repeat(0xB3, 1), None);
+        assert_eq!(pressed.repeat(0xB3, 1, true), None);
         pressed.down(0xB3, 1, true);
-        assert_eq!(pressed.repeat(0xB3, 1), Some(true));
-        assert_eq!(pressed.repeat(0xB0, 1), None);
+        assert_eq!(pressed.repeat(0xB3, 1, true), Some(true));
+        assert_eq!(pressed.repeat(0xB0, 1, true), None);
         assert!(pressed.up(0xB3));
-        assert_eq!(pressed.repeat(0xB3, 1), None);
+        assert_eq!(pressed.repeat(0xB3, 1, true), None);
         assert!(!pressed.up(0xB3));
     }
 
@@ -1334,13 +1338,37 @@ mod tests {
     fn restarting_capture_recovers_a_missing_media_key_release() {
         let mut pressed = PressedKeys::default();
         pressed.down(0xB3, 1, true);
-        assert_eq!(pressed.repeat(0xB3, 1), Some(true));
-        assert_eq!(pressed.repeat(0xB3, 2), None);
+        assert_eq!(pressed.repeat(0xB3, 1, true), Some(true));
+        assert_eq!(pressed.repeat(0xB3, 2, true), None);
         // A delayed release from the previous session still must be consumed.
         assert!(pressed.up(0xB3));
         pressed.down(0xB3, 2, false);
-        assert_eq!(pressed.repeat(0xB3, 2), Some(false));
+        assert_eq!(pressed.repeat(0xB3, 2, true), Some(false));
         assert!(!pressed.up(0xB3));
+    }
+
+    #[test]
+    fn stop_drains_consumed_held_key_repeats_but_restart_accepts_a_fresh_down() {
+        let mut pressed = PressedKeys::default();
+        pressed.down(0xB3, 1, true);
+        // Stop increments the generation while the physical key is still down.
+        // Repeated downs must keep the old decision, without a new command.
+        for _ in 0..3 {
+            assert_eq!(pressed.repeat(0xB3, 2, false), Some(true));
+        }
+        assert!(pressed.up(0xB3));
+        assert_eq!(pressed.repeat(0xB3, 2, false), None);
+
+        pressed.down(0xB3, 2, true);
+        // Starting again deliberately permits recovery from a missing release.
+        assert_eq!(pressed.repeat(0xB3, 3, true), None);
+        pressed.down(0xB3, 3, false);
+        assert!(!pressed.up(0xB3));
+
+        // Stop does not begin consuming a key whose down passed through.
+        pressed.down(0xB0, 3, false);
+        assert_eq!(pressed.repeat(0xB0, 4, false), None);
+        assert!(!pressed.up(0xB0));
     }
 
     #[test]
@@ -1349,12 +1377,12 @@ mod tests {
         pressed.down(0xB0, 1, true);
         pressed.down(0xB3, 1, true);
         pressed.recover();
-        assert_eq!(pressed.repeat(0xB0, 1), None);
-        assert_eq!(pressed.repeat(0xB3, 1), None);
+        assert_eq!(pressed.repeat(0xB0, 1, true), None);
+        assert_eq!(pressed.repeat(0xB3, 1, true), None);
         assert!(pressed.up(0xB0));
         // A new device can send this button even if the old one never released it.
         pressed.down(0xB3, 1, true);
-        assert_eq!(pressed.repeat(0xB3, 1), Some(true));
+        assert_eq!(pressed.repeat(0xB3, 1, true), Some(true));
         assert!(pressed.up(0xB3));
     }
 
@@ -1392,7 +1420,7 @@ mod tests {
             KEYBOARD_HOOK.with(|slot| {
                 let mut state = slot.borrow_mut();
                 let pressed = &mut state.as_mut().unwrap().pressed;
-                assert_eq!(pressed.repeat(0xB3, 1), None);
+                assert_eq!(pressed.repeat(0xB3, 1, true), None);
                 assert!(pressed.up(0xB3));
             });
         }

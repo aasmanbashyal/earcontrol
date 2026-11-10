@@ -121,6 +121,7 @@ pub struct EarControl {
     practice_pending: bool,
     practice: Practice,
     last_render_state: Option<(View, bool, bool)>,
+    content_view: Option<View>,
 }
 
 impl EarControl {
@@ -170,6 +171,7 @@ impl EarControl {
             practice_pending: false,
             practice: Practice::default(),
             last_render_state: None,
+            content_view: None,
         }
     }
     fn profile_index(&self) -> usize {
@@ -276,10 +278,20 @@ impl EarControl {
         let ctx = ctx.clone();
         std::thread::spawn(move || {
             let _ = tx.send(native::list_devices());
-            ctx.request_repaint();
+            ctx.request_repaint_of(egui::ViewportId::ROOT);
         });
     }
     fn start_practice(&mut self, ctx: &egui::Context) {
+        if self.practice_open
+            && window::practice_target().is_some_and(|practice| {
+                self.target.as_ref().is_some_and(|target| {
+                    target.handle == practice.handle && target.process_id == practice.process_id
+                })
+            })
+        {
+            ctx.send_viewport_cmd_to(self.practice.viewport_id(), egui::ViewportCommand::Focus);
+            return;
+        }
         let result = self.runtime.stop();
         self.report(result);
         self.practice_open = true;
@@ -463,6 +475,14 @@ impl EarControl {
                         egui::vec2(ui.available_width(), 32.0),
                         egui::Sense::click(),
                     );
+                    response.widget_info(|| {
+                        egui::WidgetInfo::labeled(
+                            egui::WidgetType::Button,
+                            true,
+                            format!("Devices: {label}"),
+                        )
+                    });
+                    focus_outline(ui, &response, rect);
                     ui.painter().circle_filled(
                         egui::pos2(rect.left() + 8.0, rect.center().y),
                         3.0,
@@ -826,71 +846,64 @@ impl EarControl {
             )
             .show(ctx, |ui| {
                 ui.spacing_mut().scroll.floating_allocated_width = 8.0;
-                egui::ScrollArea::vertical()
+                let changed_view = self.content_view != Some(self.view);
+                self.content_view = Some(self.view);
+                let mut scroll = egui::ScrollArea::vertical()
                     .id_salt(("content", self.view as u8))
-                    .auto_shrink([false, false])
-                    .show(ui, |ui| {
-                        ui.horizontal(|ui| {
-                            ui.vertical(|ui| {
-                                ui.spacing_mut().item_spacing.y = 4.0;
-                                ui.spacing_mut().interact_size.y = 30.0;
-                                ui.horizontal(|ui| {
-                                    let (rect, _) = ui.allocate_exact_size(
-                                        egui::Vec2::splat(22.0),
-                                        egui::Sense::hover(),
-                                    );
-                                    design::draw_icon(
-                                        ui.painter(),
-                                        rect,
-                                        view_icon(self.view),
-                                        palette.muted,
-                                    );
-                                    ui.label(design::strong(
-                                        if self.view == View::Buttons {
-                                            "Button mappings"
-                                        } else {
-                                            VIEWS
-                                                .iter()
-                                                .find(|(v, _, _)| *v == self.view)
-                                                .unwrap()
-                                                .1
-                                        },
-                                        24.0,
-                                    ));
-                                });
-                                ui.label(
-                                    design::text(
-                                        VIEWS.iter().find(|(v, _, _)| *v == self.view).unwrap().2,
-                                        13.0,
-                                    )
-                                    .color(palette.muted),
+                    .auto_shrink([false, false]);
+                if changed_view {
+                    scroll = scroll.vertical_scroll_offset(0.0);
+                }
+                scroll.show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.vertical(|ui| {
+                            ui.spacing_mut().item_spacing.y = 4.0;
+                            ui.spacing_mut().interact_size.y = 30.0;
+                            ui.horizontal(|ui| {
+                                let (rect, _) = ui.allocate_exact_size(
+                                    egui::Vec2::splat(22.0),
+                                    egui::Sense::hover(),
                                 );
+                                design::draw_icon(
+                                    ui.painter(),
+                                    rect,
+                                    view_icon(self.view),
+                                    palette.muted,
+                                );
+                                ui.label(design::strong(
+                                    if self.view == View::Buttons {
+                                        "Button mappings"
+                                    } else {
+                                        VIEWS.iter().find(|(v, _, _)| *v == self.view).unwrap().1
+                                    },
+                                    24.0,
+                                ));
                             });
-                            ui.with_layout(
-                                egui::Layout::right_to_left(egui::Align::Center),
-                                |ui| {
-                                    if design::button(
-                                        ui,
-                                        "Practice deck",
-                                        Some(Icon::Monitor),
-                                        false,
-                                    )
-                                    .clicked()
-                                    {
-                                        self.start_practice(ctx);
-                                    }
-                                },
+                            ui.label(
+                                design::text(
+                                    VIEWS.iter().find(|(v, _, _)| *v == self.view).unwrap().2,
+                                    13.0,
+                                )
+                                .color(palette.muted),
                             );
                         });
-                        ui.add_space(4.0);
-                        match self.view {
-                            View::Buttons => self.buttons(ui),
-                            View::Macros => self.macros(ui),
-                            View::Devices => self.devices(ui),
-                            View::Activity => self.activity(ui),
-                            View::Settings => self.preferences(ui),
-                        }
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            if design::button(ui, "Practice deck", Some(Icon::Monitor), false)
+                                .clicked()
+                            {
+                                self.start_practice(ctx);
+                            }
+                        });
                     });
+                    ui.add_space(4.0);
+                    match self.view {
+                        View::Buttons => self.buttons(ui),
+                        View::Macros => self.macros(ui),
+                        View::Devices => self.devices(ui),
+                        View::Activity => self.activity(ui),
+                        View::Settings => self.preferences(ui),
+                    }
+                });
             });
 
         self.profile_dialog(ctx);
@@ -1248,6 +1261,7 @@ impl EarControl {
                     if self.selected_mapping == index || response.hovered() {
                         ui.painter().rect_filled(r, 5.0, p.hover);
                     }
+                    focus_outline(ui, &response, r);
                     design::draw_icon(
                         ui.painter(),
                         egui::Rect::from_center_size(egui::pos2(r.left() + 15.0, r.top() + 20.0), egui::Vec2::splat(16.0)),
@@ -1708,7 +1722,7 @@ impl EarControl {
                         ui.horizontal(|ui| {
                             ui.vertical(|ui| {
                                 ui.label(design::strong(
-                                    format!("Received commands   {}", events.len()),
+                                    format!("Recent events   {}", events.len()),
                                     16.0,
                                 ));
                                 ui.label(
@@ -2115,20 +2129,21 @@ impl EarControl {
             return;
         };
         let response = egui::Modal::new(egui::Id::new("import_confirm")).show(ctx, |ui| {
+            ui.set_width((ctx.content_rect().width() - 64.0).clamp(280.0, 516.0));
             ui.heading("Import settings");
             ui.label(
                 "This replaces your current profiles and preferences. Active control will stop.",
             );
-            ui.label(format!(
-                "{} profiles: {}",
-                import.profiles.len(),
-                import
-                    .profiles
-                    .iter()
-                    .map(|p| p.name.as_str())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ));
+            ui.label(format!("{} profiles", import.profiles.len()));
+            egui::ScrollArea::vertical()
+                .id_salt("import_profile_names")
+                .max_height((ctx.content_rect().height() - 240.0).clamp(80.0, 320.0))
+                .auto_shrink([false, true])
+                .show(ui, |ui| {
+                    for profile in &import.profiles {
+                        ui.label(&profile.name);
+                    }
+                });
             ui.horizontal(|ui| {
                 if ui.button("Cancel").clicked() {
                     self.import_pending = None;
@@ -2291,6 +2306,17 @@ fn empty_state(ui: &mut egui::Ui, icon: Icon, title: &str, detail: &str) {
     });
     ui.add_space(36.0);
 }
+fn focus_outline(ui: &egui::Ui, response: &egui::Response, rect: egui::Rect) {
+    if response.has_focus() {
+        ui.painter().rect_stroke(
+            rect.shrink(2.0),
+            5.0,
+            egui::Stroke::new(1.5_f32, Palette::get(ui.ctx()).text),
+            egui::StrokeKind::Inside,
+        );
+    }
+}
+
 fn mapping_row(ui: &mut egui::Ui, mapping: &mut Mapping) -> bool {
     let p = Palette::get(ui.ctx());
     let (r, _) =
@@ -2342,6 +2368,7 @@ fn mapping_row(ui: &mut egui::Ui, mapping: &mut Mapping) -> bool {
     if response.hovered() {
         ui.painter().rect_filled(action, 5.0, p.soft);
     }
+    focus_outline(ui, &response, action);
     let key = if let [MacroStep::Key { keys }] = mapping.steps.as_slice() {
         Some(keys.as_str())
     } else {
@@ -2714,6 +2741,187 @@ mod tests {
         status.mode = "idle".into();
         status.running_macro = true;
         assert!(!can_select_target(&status));
+    }
+
+    #[test]
+    fn long_import_keeps_confirmation_controls_visible_at_minimum_size() {
+        let dir = tempfile::tempdir().unwrap();
+        let runtime = AppState::new(dir.path().join("profiles.json"), || {});
+        let mut app = EarControl::from_runtime(runtime);
+        let mut imported = Settings::default();
+        while imported.profiles.len() < 32 {
+            add_profile(&mut imported, false);
+        }
+        for profile in &mut imported.profiles {
+            profile.name = "W".repeat(80);
+        }
+        model::validate_settings(&imported).unwrap();
+        app.import_pending = Some(imported);
+        let ctx = egui::Context::default();
+        configure_style(&ctx);
+        ctx.enable_accesskit();
+        let viewport = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(860.0, 620.0));
+        let input = || egui::RawInput {
+            screen_rect: Some(viewport),
+            ..Default::default()
+        };
+        let _ = ctx.run(input(), |ctx| app.show(ctx));
+        let output = ctx.run(input(), |ctx| app.show(ctx));
+        let tree = output.platform_output.accesskit_update.unwrap();
+        for label in ["Cancel", "Replace and import"] {
+            let (_, node) = tree
+                .nodes
+                .iter()
+                .find(|(_, node)| {
+                    node.role() == egui::accesskit::Role::Button && node.label() == Some(label)
+                })
+                .unwrap_or_else(|| panic!("Missing import control: {label}"));
+            let bounds = node.bounds().unwrap();
+            let rect = egui::Rect::from_min_max(
+                egui::pos2(bounds.x0 as f32, bounds.y0 as f32),
+                egui::pos2(bounds.x1 as f32, bounds.y1 as f32),
+            );
+            assert!(
+                viewport.contains_rect(rect),
+                "{label} is outside {viewport:?}: {rect:?}"
+            );
+        }
+        assert!(app.import_pending.is_some());
+        assert_eq!(
+            app.draft, app.saved,
+            "Reviewing an import must not replace the draft"
+        );
+    }
+
+    #[test]
+    fn changing_pages_resets_scroll_without_resetting_an_active_page() {
+        let dir = tempfile::tempdir().unwrap();
+        let runtime = AppState::new(dir.path().join("profiles.json"), || {});
+        let mut app = EarControl::from_runtime(runtime);
+        let profile = app.profile_index();
+        app.draft.profiles[profile].mappings[0].steps = vec![MacroStep::Delay { ms: 500 }; 32];
+        app.saved = app.draft.clone();
+        app.view = View::Macros;
+        let ctx = egui::Context::default();
+        configure_style(&ctx);
+        let initial = frame(&mut app, &ctx, Vec::new());
+        let initial_y = text_position(&initial, "Practice deck").y;
+        let _ = frame(
+            &mut app,
+            &ctx,
+            vec![
+                egui::Event::PointerMoved(egui::pos2(1000.0, 500.0)),
+                egui::Event::MouseWheel {
+                    unit: egui::MouseWheelUnit::Point,
+                    delta: egui::vec2(0.0, -1000.0),
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ],
+        );
+        for _ in 0..30 {
+            let _ = frame(&mut app, &ctx, Vec::new());
+        }
+        let scrolled = frame(&mut app, &ctx, Vec::new());
+        assert!(text_position(&scrolled, "Practice deck").y < initial_y - 100.0);
+        app.view = View::Buttons;
+        let _ = frame(&mut app, &ctx, Vec::new());
+        app.view = View::Macros;
+        let returned = frame(&mut app, &ctx, Vec::new());
+        assert!(
+            (text_position(&returned, "Practice deck").y - initial_y).abs() < 1.0,
+            "Reopening a page must reveal its heading and Practice action"
+        );
+    }
+
+    #[test]
+    fn custom_navigation_controls_expose_names_and_visible_keyboard_focus() {
+        for (view, label) in [
+            (View::Buttons, "Edit "),
+            (View::Macros, "Previous track"),
+            (View::Buttons, "Devices:"),
+        ] {
+            let dir = tempfile::tempdir().unwrap();
+            let runtime = AppState::new(dir.path().join("profiles.json"), || {});
+            let mut app = EarControl::from_runtime(runtime);
+            app.view = view;
+            let ctx = egui::Context::default();
+            configure_style(&ctx);
+            ctx.enable_accesskit();
+            let initial = frame(&mut app, &ctx, Vec::new());
+            let tree = initial.platform_output.accesskit_update.unwrap();
+            let (target, _) = tree
+                .nodes
+                .iter()
+                .find(|(_, node)| {
+                    node.role() == egui::accesskit::Role::Button
+                        && node.label().is_some_and(|name| name.starts_with(label))
+                })
+                .unwrap_or_else(|| panic!("Missing named control: {label}"));
+            let focused = frame(
+                &mut app,
+                &ctx,
+                vec![egui::Event::AccessKitActionRequest(
+                    egui::accesskit::ActionRequest {
+                        action: egui::accesskit::Action::Focus,
+                        target: *target,
+                        data: None,
+                    },
+                )],
+            );
+            assert_eq!(
+                ctx.memory(|memory| memory.focused().map(|id| id.value())),
+                Some(target.0)
+            );
+            // A scrollbar can settle between the initial and focused frames.
+            // Compare the outline with the current accessible control bounds.
+            let bounds = focused
+                .platform_output
+                .accesskit_update
+                .as_ref()
+                .unwrap()
+                .nodes
+                .iter()
+                .find(|(id, _)| id == target)
+                .unwrap()
+                .1
+                .bounds()
+                .unwrap();
+            let expected_outline = egui::Rect::from_min_max(
+                egui::pos2(bounds.x0 as f32, bounds.y0 as f32),
+                egui::pos2(bounds.x1 as f32, bounds.y1 as f32),
+            )
+            .shrink(2.0);
+            assert!(
+                focused.shapes.iter().any(|shape| {
+                    matches!(&shape.shape, egui::Shape::Rect(rect)
+                    if rect.rect == expected_outline
+                        && rect.stroke.width == 1.5
+                        && rect.stroke.color == Palette::get(&ctx).text)
+                }),
+                "{label} needs a visible focus indicator"
+            );
+            if !label.starts_with("Devices:") {
+                let _ = frame(
+                    &mut app,
+                    &ctx,
+                    vec![egui::Event::Key {
+                        key: egui::Key::Enter,
+                        physical_key: Some(egui::Key::Enter),
+                        pressed: true,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    }],
+                );
+                assert_eq!(app.view, View::Macros);
+                if view == View::Macros {
+                    assert_eq!(
+                        app.draft.profiles[app.profile_index()].mappings[app.selected_mapping]
+                            .trigger,
+                        "previous"
+                    );
+                }
+            }
+        }
     }
 
     #[test]

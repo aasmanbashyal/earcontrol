@@ -24,6 +24,8 @@ From the repository root:
 
 The script recognizes an optional local Rust toolchain under `.tools/`. For NSIS, use an installed copy, set `NSIS_HOME`, or place it in `.tools/nsis`. Cargo's lockfile is at the repository root. Update the application version in `desktop/Cargo.toml` and regenerate the lockfile with Cargo.
 
+The committed `.cargo/config.toml` selects the static C runtime for Windows x64. Local and CI builds use that same setting. Do not override it with `RUSTFLAGS` when packaging. Release verification rejects executable imports of Visual C++ runtime DLLs. `Test` also runs the standalone PowerShell checks in `scripts/test-release-verification.ps1`.
+
 Keep native input safeguards in the existing engine/runtime modules. Preserve profile compatibility, draft validation, keyboard operation, accessible labels and both themes. Check the main window at 1160×780 and 860×620, and the practice window at its minimum size. The [architecture](docs/architecture.md) describes the source boundaries.
 
 Run `Check` and `Test` before proposing changes. Input changes also need `WindowsTest` on an unlocked desktop. It focuses an isolated native window and sends actual keys to that window. Record physical headphone testing separately. Do not publish personal window titles, text macros or profile exports.

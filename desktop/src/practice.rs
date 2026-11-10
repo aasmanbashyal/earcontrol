@@ -183,6 +183,9 @@ impl Practice {
                     |event| !matches!(event, egui::Event::Key {key, ..} if handled.contains(key)),
                 )
             });
+            // egui chooses directional focus movement before this handler runs.
+            // Removing a consumed arrow event alone cannot undo that queued move.
+            ctx.memory_mut(|memory| memory.move_focus(egui::FocusDirection::None));
         }
     }
 
@@ -455,6 +458,19 @@ impl Practice {
         });
         if response.clicked() {
             response.request_focus();
+        }
+        if response.has_focus() {
+            ui.memory_mut(|memory| {
+                memory.set_focus_lock_filter(
+                    slide_id(),
+                    egui::EventFilter {
+                        horizontal_arrows: true,
+                        vertical_arrows: true,
+                        escape: true,
+                        ..Default::default()
+                    },
+                );
+            });
         }
         ui.painter().rect(
             card,
@@ -878,6 +894,71 @@ mod tests {
         assert_eq!(app.state.index, 1);
         assert_eq!(app.last_key, "Right");
         assert_eq!(app.received, 1);
+    }
+
+    #[test]
+    fn consecutive_deck_arrows_keep_focus_after_complete_frames() {
+        let ctx = egui::Context::default();
+        design::configure_style(&ctx);
+        let mut app = Practice::default();
+        let input = |events| egui::RawInput {
+            screen_rect: Some(Rect::from_min_size(Pos2::ZERO, Vec2::new(960.0, 640.0))),
+            events,
+            ..Default::default()
+        };
+        let _ = ctx.run(input(Vec::new()), |ctx| app.show(ctx));
+        for (key, index, received) in [
+            (Key::ArrowRight, 1, 1),
+            (Key::ArrowRight, 2, 2),
+            (Key::ArrowLeft, 1, 3),
+        ] {
+            let event = |pressed| egui::Event::Key {
+                key,
+                physical_key: Some(key),
+                pressed,
+                repeat: false,
+                modifiers: egui::Modifiers::NONE,
+            };
+            let _ = ctx.run(input(vec![event(true)]), |ctx| app.show(ctx));
+            assert_eq!(app.state.index, index);
+            assert_eq!(app.received, received);
+            assert_eq!(
+                ctx.memory(|memory| memory.focused()),
+                Some(slide_id()),
+                "A deck arrow must not move focus into the text editor"
+            );
+            let _ = ctx.run(input(vec![event(false)]), |ctx| app.show(ctx));
+        }
+        let _ = ctx.run(
+            input(vec![egui::Event::Key {
+                key: Key::Tab,
+                physical_key: Some(Key::Tab),
+                pressed: true,
+                repeat: false,
+                modifiers: egui::Modifiers::NONE,
+            }]),
+            |ctx| app.show(ctx),
+        );
+        assert_ne!(
+            ctx.memory(|memory| memory.focused()),
+            Some(slide_id()),
+            "Tab must still reach other controls"
+        );
+        ctx.memory_mut(|memory| memory.request_focus(text_id()));
+        let _ = ctx.run(input(Vec::new()), |ctx| app.show(ctx));
+        let _ = ctx.run(
+            input(vec![egui::Event::Key {
+                key: Key::ArrowRight,
+                physical_key: Some(Key::ArrowRight),
+                pressed: true,
+                repeat: false,
+                modifiers: egui::Modifiers::NONE,
+            }]),
+            |ctx| app.show(ctx),
+        );
+        assert_eq!(app.state.index, 1);
+        assert_eq!(app.received, 3);
+        assert_eq!(ctx.memory(|memory| memory.focused()), Some(text_id()));
     }
     #[test]
     fn focused_button_owns_enter_but_other_deck_keys_work() {

@@ -6,6 +6,11 @@ $lockedVersion = [regex]::Match((Get-Content "$projectRoot/Cargo.lock" -Raw), '\
 if ($version -notmatch '^\d+\.\d+\.\d+$' -or $version -ne $lockedVersion) { throw 'Versions in desktop/Cargo.toml and Cargo.lock must agree.' }
 if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw "Tag must equal v$version." }
 if ($VersionOnly) { Write-Output "Release version $version verified."; return }
+. "$PSScriptRoot/pe-check.ps1"
+$releaseExe = Join-Path "$projectRoot/dist" "EarControl-$version/EarControl.exe"
+Assert-PortableApp -Path $releaseExe
+$fileVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($releaseExe)
+if ($fileVersion.FileVersion -ne $version -or $fileVersion.ProductVersion -ne $version) { throw 'Executable version resources do not match the release version.' }
 $expected = @("EarControl-$version/EarControl.exe", "EarControl-$version-win-x64.zip")
 if (!$PortableOnly) { $expected += "EarControl_${version}_x64-setup.exe" }
 $lines = @(Get-Content "$projectRoot/dist/EarControl-$version-SHA256SUMS.txt")
@@ -33,4 +38,4 @@ try {
     $exeLine = $lines | Where-Object { $_.EndsWith("  EarControl-$version/EarControl.exe") }
     if ($hash -ne $exeLine.Substring(0,64)) { throw 'ZIP executable differs from the release executable.' }
 } finally { $archive.Dispose() }
-Write-Output "Verified version $version, portable ZIP contents, and $($expected.Count) release artifacts."
+Write-Output "Verified version $version, x64 GUI executable, static CRT imports, portable ZIP contents, and $($expected.Count) release artifacts."

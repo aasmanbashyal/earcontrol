@@ -150,4 +150,92 @@ mod tests {
         assert_eq!(loaded.cooldown_ms, 0);
         assert_eq!(loaded, settings);
     }
+
+    #[test]
+    fn settings_read_accepts_exact_limit_and_rejects_one_extra_byte() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("settings.json");
+        let settings = Settings::default();
+        let mut content = serde_json::to_vec(&settings).unwrap();
+        content.resize(MAX_SETTINGS_BYTES as usize, b' ');
+        std::fs::write(&path, &content).unwrap();
+        assert_eq!(read_settings(&path).unwrap(), Some(settings));
+
+        content.push(b' ');
+        std::fs::write(&path, &content).unwrap();
+        assert!(read_settings(&path).unwrap_err().contains("exceeds 2 MB"));
+        assert_eq!(std::fs::read(&path).unwrap(), content);
+    }
+
+    #[test]
+    fn oversized_serialized_save_preserves_the_previous_file() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("settings.json");
+        save_settings(&path, &Settings::default()).unwrap();
+        let before = std::fs::read(&path).unwrap();
+        let mut settings = Settings::default();
+        let template = settings.profiles[0].clone();
+        settings.profiles = (0..32)
+            .map(|index| {
+                let mut profile = template.clone();
+                profile.id = format!("large-{index}");
+                for mapping in &mut profile.mappings {
+                    // JSON escaping makes this valid 2,000-character text step
+                    // larger on disk than its in-memory UTF-8 representation.
+                    mapping.steps = vec![MacroStep::Text {
+                        text: "\u{0001}".repeat(2_000),
+                    }];
+                }
+                profile
+            })
+            .collect();
+        settings.active_profile_id = settings.profiles[0].id.clone();
+        validate_settings(&settings).unwrap();
+        assert!(serde_json::to_vec_pretty(&settings).unwrap().len() as u64 > MAX_SETTINGS_BYTES);
+        assert!(save_settings(&path, &settings)
+            .unwrap_err()
+            .contains("exceed 2 MB"));
+        assert_eq!(std::fs::read(&path).unwrap(), before);
+        assert_eq!(std::fs::read_dir(directory.path()).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn invalid_utf8_uses_defaults_without_replacing_original_bytes() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("settings.json");
+        let original = [b'{', b'"', 0xFF, 0xFE, b'"', b'}'];
+        std::fs::write(&path, original).unwrap();
+        assert!(read_settings(&path).is_err());
+        let (loaded, warning) = load_settings(&path);
+        assert_eq!(loaded, Settings::default());
+        assert!(warning.is_some());
+        assert_eq!(std::fs::read(&path).unwrap(), original);
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn sharing_denied_replacement_preserves_old_file_and_cleans_temporary_file() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("settings.json");
+        save_settings(&path, &Settings::default()).unwrap();
+        let before = std::fs::read(&path).unwrap();
+        // FILE_SHARE_READ permits inspection but denies replacement/deletion.
+        let lock = std::fs::OpenOptions::new()
+            .read(true)
+            .share_mode(1)
+            .open(&path)
+            .unwrap();
+        let changed = Settings {
+            theme: "dark".into(),
+            ..Settings::default()
+        };
+        assert!(save_settings(&path, &changed)
+            .unwrap_err()
+            .contains("Could not replace"));
+        assert_eq!(std::fs::read(&path).unwrap(), before);
+        assert_eq!(std::fs::read_dir(directory.path()).unwrap().count(), 1);
+        drop(lock);
+        assert_eq!(read_settings(&path).unwrap(), Some(Settings::default()));
+    }
 }
