@@ -2,9 +2,12 @@
 
 Map headphone media commands to Windows shortcuts and macros.
 
-[![Watch the EarControl native Windows demo](docs/media/earcontrol-native-poster.jpg)](docs/media/earcontrol-native-demo.mp4?raw=true)
+<picture>
+  <source media="(prefers-reduced-motion: reduce)" srcset="docs/media/earcontrol-native-poster.jpg">
+  <img src="docs/media/earcontrol-native-demo.webp" alt="EarControl demo showing headphone button mappings, macros, and slide navigation in the Practice deck.">
+</picture>
 
-[Download the native Windows demo](docs/media/earcontrol-native-demo.mp4?raw=true) · [User guide](docs/user-guide.md) · [Development](CONTRIBUTING.md) · [Support](SUPPORT.md)
+[User guide](docs/user-guide.md) · [Development](CONTRIBUTING.md) · [Support](SUPPORT.md)
 
 The 22.5-second demo shows Button mappings, Macros, and the Practice deck advancing with the Right key. [Demo credits](media/launch/CREDITS.md#native-windows-demo)
 
