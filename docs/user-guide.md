@@ -12,7 +12,7 @@ If you installed EarControl 2.x, close it and uninstall it in Windows Settings. 
 4. Click **Start control**, then switch to the target. Keep the slideshow tab and canvas focused. A window target cannot distinguish browser tabs, text fields, or the address bar.
 5. Click **Stop** to cancel control and any running macro. Closing stops capture; minimizing keeps it running. Every launch begins idle.
 
-**Practice deck** opens a local window and selects it as the target. It supports slide navigation and has a text field for testing text macros. Click its slide background to return to navigation.
+**Practice deck** opens a local window and starts control for that window. Keep the deck in front to try your headphone mappings. The large slide number shows where you are. The deck also has a text field for testing text macros. Click the slide background to return to navigation.
 
 ## Profiles and macros
 

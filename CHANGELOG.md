@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.1
+
+- Opening the Practice deck starts control for that window and brings it to the front. The deck shows whether control is active and makes the current slide number easier to see.
+- The target-window picker refreshes window titles when opened and while searching. It keeps the results open while you type and scrolls through long lists.
+
 ## 3.0.0, native Rust port
 
 - Added a saved accent color and kept Activity and Button check ordered when input and macro workers publish concurrently.

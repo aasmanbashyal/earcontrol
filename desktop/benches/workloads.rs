@@ -108,7 +108,7 @@ fn main() {
             )),
             ..Default::default()
         };
-        let output = ctx.run(input, |ctx| practice.show(ctx));
+        let output = ctx.run(input, |ctx| practice.show(ctx, false));
         black_box(ctx.tessellate(output.shapes, output.pixels_per_point));
     }));
     // Diagnostic for large configurations. The original eleven workload rows

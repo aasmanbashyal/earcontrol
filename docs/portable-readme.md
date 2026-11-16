@@ -1,4 +1,4 @@
-# EarControl 3.0.0 for Windows
+# EarControl 3.0.1 for Windows
 
 Headphone buttons, shortcuts, and macros for Windows 10/11 x64 with a working OpenGL graphics driver. Both windows are native Rust UI. No WebView2, Bun, Node, .NET or Rust installation is needed.
 
@@ -12,7 +12,7 @@ Extract the ZIP and open `EarControl.exe`. Close any older copy first. The insta
 4. Click **Start control**, then switch to the target. Keep its presentation canvas focused. A window target cannot distinguish browser tabs or text fields.
 5. Click **Stop** to cancel control and any running macro. Closing stops capture; minimizing keeps it running. Every launch begins idle.
 
-**Practice deck** opens a local window for slide navigation and text-macro tests. The Google Slides and PowerPoint profiles use play/pause and next track for Right, previous track for Left, and stop playback for Escape. Optional volume commands start disabled.
+**Practice deck** opens a local window and starts control for that window. Use it to check slide navigation and text macros. The Google Slides and PowerPoint profiles use play/pause and next track for Right, previous track for Left, and stop playback for Escape. Optional volume commands start disabled.
 
 ## Settings and macros
 

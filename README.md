@@ -15,10 +15,10 @@ EarControl lets a supported headphone command advance a slide, run a shortcut, o
 
 ## Get started
 
-This branch contains the **3.0.0 native Rust port**, including both UI windows. Local builds produce the installer and portable files below. Published downloads appear on the [Releases page](https://github.com/aasmanbashyal/earcontrol/releases); this branch does not imply a published 3.0.0 release.
+Download the Windows installer or portable ZIP from [GitHub Releases](https://github.com/aasmanbashyal/earcontrol/releases/latest).
 
-- **Installer:** `EarControl_3.0.0_x64-setup.exe`, for a per-user installation.
-- **Portable:** extract `EarControl-3.0.0-win-x64.zip` and open `EarControl.exe`.
+- Run the `x64-setup.exe` installer for a per-user installation.
+- Extract the `win-x64.zip` portable download and open `EarControl.exe`.
 
 If you installed 2.x, uninstall it first with **Delete app data** unchecked. Then install 3.0 to use your existing profiles.
 
@@ -26,9 +26,11 @@ Windows 10/11 x64 with a working OpenGL graphics driver is required. The app nee
 
 1. Pair headphones with the PC in Windows Bluetooth settings.
 2. Open **Monitor** and try each gesture. Activity shows the command received.
-3. Choose a profile and target window, or open the **Practice deck**.
+3. Choose a profile and target window.
 4. Click **Start control**, then focus the target window.
 5. Click **Stop** to cancel control and any running macro. Closing stops capture; minimizing keeps it running.
+
+To try your mappings in EarControl, click **Practice deck**. This opens the deck and starts control for that window.
 
 ## Make the buttons useful
 
@@ -43,7 +45,7 @@ Google Slides and PowerPoint profiles start with these mappings:
 
 Create profiles for other apps. Macros combine **Shortcut**, **Delay**, and **Text** steps, with a countdown before testing and cancellation on Stop or target-focus loss. The practice deck provides slide navigation and a text field for checking mappings. Light, dark, and system themes share the same neutral controls.
 
-The [3.0.0 release report](docs/release-3.0.0.md) compares the current candidate with the published 2.1.2 build. The [port plan](docs/rust-port-plan.md), [optimization results](docs/optimization.md), and [QA record](docs/qa.md) cover the earlier builds and physical-device checks.
+The [3.0.0 release report](docs/release-3.0.0.md) compares the native Rust port with 2.1.2. The [port plan](docs/rust-port-plan.md), [optimization results](docs/optimization.md), and [QA record](docs/qa.md) cover the earlier builds and physical-device checks.
 
 Windows controls which media session receives headphone events. Pause competing media apps if Monitor stays empty. Events do not identify the earbud side, tap count, or individual headset. The device list is informational; physical compatibility depends on the headphones and driver. See [headphone support](docs/user-guide.md#headphone-support).
 

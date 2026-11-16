@@ -277,6 +277,114 @@ impl EarControl {
             Err(error) => self.notice = Some(error),
         }
     }
+
+    fn target_picker(&mut self, ui: &mut egui::Ui, width: f32, refresh: impl FnOnce(&mut Self)) {
+        ui.set_max_width(width);
+        ui.visuals_mut().widgets.inactive.bg_stroke = egui::Stroke::NONE;
+        ui.visuals_mut().widgets.hovered.bg_stroke = egui::Stroke::NONE;
+        let title = self
+            .target
+            .as_ref()
+            .map(|w| w.title.as_str())
+            .unwrap_or("Choose a window to control")
+            .to_owned();
+        let trigger = ui.add(
+            egui::Button::new(design::text(&title, 12.0))
+                .right_text("▾")
+                .min_size(egui::vec2(width, 36.0))
+                .truncate(),
+        );
+        trigger.widget_info(|| {
+            let mut info = egui::WidgetInfo::labeled(
+                egui::WidgetType::ComboBox,
+                ui.is_enabled(),
+                "Target window",
+            );
+            info.current_text_value = Some(title.clone());
+            info
+        });
+        let popup = egui::Popup::menu(&trigger)
+            .gap(4.0)
+            .width(trigger.rect.width())
+            .align_alternatives(&[])
+            .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
+            .style(egui::style::StyleModifier::new(|style| {
+                style.spacing.scroll.floating = false;
+            }));
+        let opening = !popup.is_open();
+        let popup_id = popup.get_id();
+        let frame = egui::Frame::popup(ui.style());
+        let margins = frame.total_margin();
+        let max_bottom = ui.ctx().content_rect().bottom() - margins.bottom;
+        if trigger.enabled() {
+            popup.frame(frame).show(|ui| {
+                ui.set_width(trigger.rect.width() - margins.sum().x);
+                if opening {
+                    self.window_search.clear();
+                }
+                ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
+                let search = ui.add(
+                    design::singleline(&mut self.window_search)
+                        .hint_text("Search windows")
+                        .desired_width(f32::INFINITY),
+                );
+                if opening {
+                    search.request_focus();
+                }
+                let search_changed = opening || search.changed();
+                if search_changed {
+                    refresh(self);
+                }
+                let query = self.window_search.trim().to_lowercase();
+                let mut matches = self
+                    .windows
+                    .iter()
+                    .filter(|w| w.title.to_lowercase().contains(&query))
+                    .peekable();
+                if matches.peek().is_none() {
+                    ui.weak(if query.is_empty() {
+                        "No open windows"
+                    } else {
+                        "No matching windows"
+                    });
+                    return;
+                }
+                let height = (max_bottom - ui.next_widget_position().y).clamp(1.0, 312.0);
+                // A popup remembers its last size. Let the list grow after a short search.
+                let mut results = egui::ScrollArea::vertical()
+                    .max_height(height)
+                    .min_scrolled_height(height);
+                if search_changed {
+                    results = results.vertical_scroll_offset(0.0);
+                }
+                results.show(ui, |ui| {
+                    if query.is_empty()
+                        && self.target.is_some()
+                        && ui.selectable_label(false, "Clear target").clicked()
+                    {
+                        self.target = None;
+                        ui.close();
+                    }
+                    for window in matches {
+                        if ui
+                            .selectable_value(&mut self.target, Some(window.clone()), &window.title)
+                            .on_hover_text(&window.title)
+                            .clicked()
+                        {
+                            ui.close();
+                        }
+                    }
+                });
+            });
+        } else {
+            egui::Popup::close_id(ui.ctx(), popup_id);
+        }
+        let open = egui::Popup::is_id_open(ui.ctx(), popup_id);
+        ui.ctx()
+            .accesskit_node_builder(trigger.id, |node| node.set_expanded(open));
+        trigger.on_hover_text(&title).on_disabled_hover_text(title);
+    }
+
     fn refresh_devices(&mut self, ctx: &egui::Context) {
         if self.device_scan.is_some() {
             return;
@@ -292,20 +400,26 @@ impl EarControl {
     }
     fn start_practice(&mut self, ctx: &egui::Context) {
         if self.practice_open
+            && self.runtime.status().mode == "control"
             && window::practice_target().is_some_and(|practice| {
                 self.target.as_ref().is_some_and(|target| {
                     target.handle == practice.handle && target.process_id == practice.process_id
                 })
             })
         {
-            ctx.send_viewport_cmd_to(self.practice.viewport_id(), egui::ViewportCommand::Focus);
+            self.focus_practice(ctx);
             return;
         }
         let result = self.runtime.stop();
         self.report(result);
         self.practice_open = true;
         self.practice_pending = true;
-        ctx.send_viewport_cmd_to(self.practice.viewport_id(), egui::ViewportCommand::Focus);
+    }
+
+    fn focus_practice(&self, ctx: &egui::Context) {
+        let viewport = self.practice.viewport_id();
+        ctx.send_viewport_cmd_to(viewport, egui::ViewportCommand::Minimized(false));
+        ctx.send_viewport_cmd_to(viewport, egui::ViewportCommand::Focus);
     }
 
     fn draft_snapshot_for_frame(&mut self, ctx: &egui::Context) -> Option<Settings> {
@@ -600,46 +714,11 @@ impl EarControl {
                                             - 28.0
                                             - ui.spacing().item_spacing.x;
                                         ui.scope(|ui| {
-                                            ui.set_max_width(combo_width);
-                                            ui.visuals_mut().widgets.inactive.bg_stroke =
-                                                egui::Stroke::NONE;
-                                            ui.visuals_mut().widgets.hovered.bg_stroke =
-                                                egui::Stroke::NONE;
-                                            let title = self
-                                                .target
-                                                .as_ref()
-                                                .map(|w| w.title.as_str())
-                                                .unwrap_or("Choose a window to control")
-                                                .to_owned();
-                                            egui::ComboBox::from_id_salt("target")
-                                                .width(combo_width)
-                                                .truncate()
-                                                .selected_text(design::text(&title, 12.0))
-                                                .show_ui(ui, |ui| {
-                                                    ui.add(
-                                                        design::singleline(&mut self.window_search)
-                                                            .hint_text("Search windows"),
-                                                    );
-                                                    ui.selectable_value(
-                                                        &mut self.target,
-                                                        None,
-                                                        "No target",
-                                                    );
-                                                    for window in &self.windows {
-                                                        if window.title.to_lowercase().contains(
-                                                            &self.window_search.to_lowercase(),
-                                                        ) {
-                                                            ui.selectable_value(
-                                                                &mut self.target,
-                                                                Some(window.clone()),
-                                                                &window.title,
-                                                            );
-                                                        }
-                                                    }
-                                                })
-                                                .response
-                                                .on_hover_text(&title)
-                                                .on_disabled_hover_text(title);
+                                            self.target_picker(
+                                                ui,
+                                                combo_width,
+                                                Self::refresh_windows,
+                                            );
                                         });
                                         if design::icon_button(
                                             ui,
@@ -940,6 +1019,12 @@ impl EarControl {
         }
         if self.practice_open {
             let id = self.practice.viewport_id();
+            let status = self.runtime.status();
+            let controlling_practice = status.mode == "control"
+                && status
+                    .target
+                    .as_ref()
+                    .is_some_and(|target| target.process_id == std::process::id());
             ctx.show_viewport_immediate(
                 id,
                 egui::ViewportBuilder::default()
@@ -954,17 +1039,22 @@ impl EarControl {
                         ctx.request_repaint_of(ctx.parent_viewport_id());
                         return;
                     }
-                    self.practice.show(ctx);
+                    self.practice.show(ctx, controlling_practice);
                 },
             );
-            if self.practice_pending {
-                if let Some(target) = window::practice_target() {
+            if self.practice_open && self.practice_pending {
+                if let Some(target) = self
+                    .practice
+                    .visible()
+                    .then(window::practice_target)
+                    .flatten()
+                {
+                    self.refresh_windows();
                     self.target = Some(target);
                     self.practice_pending = false;
-                    self.refresh_windows();
-                    self.notice = Some(
-                        "Practice deck selected. Start control, then switch to the deck.".into(),
-                    );
+                    self.notice = None;
+                    self.mode("control");
+                    self.focus_practice(ctx);
                     ctx.request_repaint();
                 } else {
                     ctx.request_repaint_after(Duration::from_millis(50));
@@ -3236,6 +3326,130 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn window_picker_refreshes_titles_and_stays_open_until_selection() {
+        let dir = tempfile::tempdir().unwrap();
+        let runtime = AppState::new(dir.path().join("profiles.json"), || {});
+        let mut app = EarControl::from_runtime(runtime);
+        let slides = TargetWindow {
+            handle: 1,
+            process_id: 1,
+            title: "Practice slides".into(),
+        };
+        let documents: Vec<_> = (2..15)
+            .map(|handle| TargetWindow {
+                handle,
+                process_id: 1,
+                title: format!("Document {handle} {}", " with a long title".repeat(25)),
+            })
+            .collect();
+        let ctx = egui::Context::default();
+        configure_style(&ctx);
+        let refreshes = std::cell::Cell::new(0);
+        let render = |app: &mut EarControl, events| {
+            ctx.run(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(860.0, 620.0),
+                    )),
+                    events,
+                    ..Default::default()
+                },
+                |ctx| {
+                    egui::CentralPanel::default().show(ctx, |ui| {
+                        app.target_picker(ui, 290.0, |app| {
+                            refreshes.set(refreshes.get() + 1);
+                            app.windows = documents.clone();
+                            if refreshes.get() >= 3 {
+                                app.windows.insert(0, slides.clone());
+                            }
+                        });
+                    });
+                },
+            )
+        };
+        let click = |app: &mut EarControl, pos| {
+            for pressed in [true, false] {
+                render(
+                    app,
+                    vec![
+                        egui::Event::PointerMoved(pos),
+                        egui::Event::PointerButton {
+                            pos,
+                            button: egui::PointerButton::Primary,
+                            pressed,
+                            modifiers: egui::Modifiers::NONE,
+                        },
+                    ],
+                );
+            }
+        };
+
+        let initial = render(&mut app, Vec::new());
+        click(
+            &mut app,
+            text_position(&initial, "Choose a window to control"),
+        );
+        let popup = render(&mut app, Vec::new());
+        assert_eq!(refreshes.get(), 1, "Opening must refresh the window list");
+        let visible_documents = |output: &egui::FullOutput| {
+            output
+                .shapes
+                .iter()
+                .filter(|shape| match &shape.shape {
+                    egui::Shape::Text(text) if text.galley.text().starts_with("Document") => {
+                        let bounds = text.visual_bounding_rect();
+                        shape.clip_rect.top() <= bounds.top()
+                            && shape.clip_rect.bottom() >= bounds.bottom()
+                    }
+                    _ => false,
+                })
+                .count()
+        };
+        assert!(
+            visible_documents(&popup) >= 5,
+            "Show at least five results at the minimum window size"
+        );
+        click(&mut app, text_position(&popup, "Search windows"));
+
+        let empty = render(&mut app, vec![egui::Event::Text("sLiDe".into())]);
+        assert_eq!(refreshes.get(), 2);
+        let _ = text_position(&empty, "No matching windows");
+        let filtered = render(&mut app, vec![egui::Event::Text("S".into())]);
+        assert_eq!(refreshes.get(), 3, "Search edits must refresh titles");
+        assert_eq!(app.window_search, "sLiDeS");
+        assert!(app.target.is_none());
+        assert!(!filtered.shapes.iter().any(|shape| matches!(
+            &shape.shape,
+            egui::Shape::Text(text) if text.galley.text().starts_with("Document")
+        )));
+
+        click(&mut app, text_position(&filtered, "Practice slides"));
+        assert_eq!(app.target.as_ref(), Some(&slides));
+        let closed = render(&mut app, Vec::new());
+        assert_eq!(
+            closed
+                .shapes
+                .iter()
+                .filter(|shape| matches!(
+                    &shape.shape,
+                    egui::Shape::Text(text) if text.galley.text() == "Practice slides"
+                ))
+                .count(),
+            1,
+            "Selecting a result must close the picker"
+        );
+
+        click(&mut app, text_position(&closed, "Practice slides"));
+        let reopened = render(&mut app, Vec::new());
+        assert!(
+            visible_documents(&reopened) >= 5,
+            "Reopening must expand the results after a narrow search"
+        );
+    }
+
     #[test]
     fn header_monitor_receives_click_and_exposes_capture_failure() {
         let dir = tempfile::tempdir().unwrap();

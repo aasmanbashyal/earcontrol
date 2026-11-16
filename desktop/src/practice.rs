@@ -1,4 +1,7 @@
-use crate::design::{self, Icon, Palette};
+use crate::{
+    design::{self, Icon, Palette},
+    model::AccentColor,
+};
 use eframe::egui::{
     self, Align, Align2, Color32, Id, Key, Layout, Pos2, Rect, Sense, Stroke, StrokeKind, Vec2,
 };
@@ -67,7 +70,7 @@ pub fn command(key: Key, modifiers: egui::Modifiers) -> Option<Command> {
 }
 
 pub const SLIDES: [(&str, &str, &str); 5] = [
-    ("Try your buttons.", "Start control in EarControl, then return to this window. Press the headphone button mapped to Right.", "A successful press moves to slide 02."),
+    ("Try your buttons.", "Press the headphone button mapped to Right to advance. You can also press the Right arrow key.", "A successful press moves to slide 2."),
     ("One press. One slide.", "Your next-slide shortcut reached this window. Press the button mapped to Left to go back, or continue with Right.", "Try a few quick presses to check the repeat setting."),
     ("Move at your pace.", "Next and previous move one slide at a time. Home returns to the first slide. End jumps to the last.", "Keyboard shortcuts and headphone macros use the same controls here."),
     ("Pause the screen.", "Press B to blank the slide. Press B or a navigation key to reveal it. Escape ends the presentation.", "After Escape, press Enter or choose Resume to continue."),
@@ -80,6 +83,8 @@ const LABELS: [&str; 5] = [
     "Presentation controls",
     "Text macros",
 ];
+const SLIDE_ACCENTS: [AccentColor; 3] = [AccentColor::Blue, AccentColor::Green, AccentColor::Amber];
+
 fn slide_id() -> Id {
     Id::new("practice_slide_navigation")
 }
@@ -189,7 +194,7 @@ impl Practice {
         }
     }
 
-    pub fn show(&mut self, ctx: &egui::Context) {
+    pub fn show(&mut self, ctx: &egui::Context, controlling: bool) {
         if !self.initial_focus {
             ctx.memory_mut(|m| m.request_focus(slide_id()));
             self.initial_focus = true;
@@ -223,7 +228,7 @@ impl Practice {
         let palette = Palette::get(ctx);
         let narrow = ctx.content_rect().width() <= 680.0;
         self.header(ctx, palette, narrow);
-        self.footer(ctx, palette, narrow);
+        self.footer(ctx, palette, narrow, controlling);
         if let Some(error) = &self.error {
             egui::TopBottomPanel::bottom("practice_error").show(ctx, |ui| {
                 ui.label(design::text(error, 12.0).color(palette.danger));
@@ -371,7 +376,7 @@ impl Practice {
             });
     }
 
-    fn footer(&self, ctx: &egui::Context, palette: Palette, narrow: bool) {
+    fn footer(&self, ctx: &egui::Context, palette: Palette, narrow: bool, controlling: bool) {
         let typing = ctx.memory(|m| m.has_focus(text_id()));
         egui::TopBottomPanel::bottom("practice_footer")
             .exact_height(if narrow { 48.0 } else { 40.0 })
@@ -414,13 +419,15 @@ impl Practice {
                         ))
                         .layout(Layout::right_to_left(Align::Center)),
                 );
-                right.label(
-                    design::text(
-                        "Start control in EarControl, then keep this window in front.",
-                        10.0,
+                let (status, color) = if controlling {
+                    ("Control on. Keep this window in front.", palette.green)
+                } else {
+                    (
+                        "Control off. Keyboard navigation is available.",
+                        palette.muted,
                     )
-                    .color(palette.muted),
-                );
+                };
+                right.label(design::text(status, 10.0).color(color));
             });
     }
 
@@ -442,6 +449,12 @@ impl Practice {
         };
         let title_size = (width * 0.055).clamp(24.0, 34.0);
         let body_size = if width < 500.0 { 12.0 } else { 13.0 };
+        let meta_height = if self.state.mode == Mode::Slides {
+            64.0
+        } else {
+            38.0
+        };
+        let content_inset = meta_height + 6.0;
         let content_height = measure(ui, title, title_size, inner_width, None)
             + 18.0
             + measure(ui, body, body_size, inner_width.min(430.0), Some(23.0))
@@ -450,7 +463,9 @@ impl Practice {
             } else {
                 44.0 + 21.0 + 40.0
             };
-        let card_height = (height - 55.0).max(300.0).max(content_height + 150.0);
+        let card_height = (height - 55.0)
+            .max(300.0)
+            .max(content_height + content_inset + 106.0);
         let (card, _) = ui.allocate_exact_size(Vec2::new(width, card_height), Sense::hover());
         let response = ui.interact(card, slide_id(), Sense::click());
         response.widget_info(|| {
@@ -490,7 +505,7 @@ impl Practice {
         let inner = card.shrink2(Vec2::new(padding, 24.0));
         let mut meta = ui.new_child(egui::UiBuilder::new().max_rect(Rect::from_min_size(
             inner.min,
-            Vec2::new(inner.width(), 20.0),
+            Vec2::new(inner.width(), meta_height),
         )));
         meta.horizontal(|ui| {
             let label = match self.state.mode {
@@ -500,18 +515,30 @@ impl Practice {
             };
             ui.label(design::text(label, 11.0).color(palette.muted));
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                let counter = ui.label(
-                    design::text(format!("{:02} / 05", self.state.index + 1), 10.0)
-                        .monospace()
-                        .color(palette.muted),
-                );
+                let (size, color) = if self.state.mode == Mode::Slides {
+                    let accent = SLIDE_ACCENTS[self.state.index % SLIDE_ACCENTS.len()];
+                    (
+                        54.0,
+                        Palette::for_accent(ui.visuals().dark_mode, accent).primary,
+                    )
+                } else {
+                    (24.0, palette.muted)
+                };
+                ui.label(design::text(format!("of {}", SLIDES.len()), 12.0).color(palette.muted));
+                let counter =
+                    ui.label(design::strong((self.state.index + 1).to_string(), size).color(color));
                 ui.ctx().accesskit_node_builder(counter.id, |node| {
-                    node.set_label(format!("Slide {} of 5", self.state.index + 1));
+                    node.set_label(format!(
+                        "Slide {} of {}",
+                        self.state.index + 1,
+                        SLIDES.len()
+                    ));
                 });
             });
         });
-        let content_top =
-            inner.top() + 44.0 + ((inner.height() - 86.0 - content_height) / 2.0).max(0.0);
+        let content_top = inner.top()
+            + content_inset
+            + ((inner.height() - content_inset - 42.0 - content_height) / 2.0).max(0.0);
         let content_rect = Rect::from_min_max(
             Pos2::new(inner.left(), content_top),
             Pos2::new(inner.right(), inner.bottom() - 40.0),
@@ -583,7 +610,7 @@ impl Practice {
             egui::FontId::proportional(10.0),
             palette.muted,
         );
-        for index in 0..5 {
+        for index in 0..SLIDES.len() {
             ui.painter().circle_filled(
                 Pos2::new(inner.right() - 42.0 + index as f32 * 10.0, bottom_y),
                 2.5,
@@ -610,18 +637,11 @@ impl Practice {
         if previous.clicked() {
             self.control(ui.ctx(), Command::Previous);
         }
-        ui.painter().text(
-            nav_rect.center(),
-            Align2::CENTER_CENTER,
-            format!("{} of 5", self.state.index + 1),
-            egui::FontId::monospace(10.0),
-            palette.muted,
-        );
         let mut next = ui.new_child(egui::UiBuilder::new().max_rect(Rect::from_min_size(
             Pos2::new(nav_rect.right() - 85.0, nav_rect.top()),
             Vec2::new(85.0, 40.0),
         )));
-        if self.state.index >= 4 || self.state.mode != Mode::Slides {
+        if self.state.index + 1 >= SLIDES.len() || self.state.mode != Mode::Slides {
             next.disable();
         }
         let next = design::button(&mut next, "Next", Some(Icon::ArrowRight), false);
@@ -906,7 +926,7 @@ mod tests {
             events,
             ..Default::default()
         };
-        let _ = ctx.run(input(Vec::new()), |ctx| app.show(ctx));
+        let _ = ctx.run(input(Vec::new()), |ctx| app.show(ctx, false));
         for (key, index, received) in [
             (Key::ArrowRight, 1, 1),
             (Key::ArrowRight, 2, 2),
@@ -919,7 +939,7 @@ mod tests {
                 repeat: false,
                 modifiers: egui::Modifiers::NONE,
             };
-            let _ = ctx.run(input(vec![event(true)]), |ctx| app.show(ctx));
+            let _ = ctx.run(input(vec![event(true)]), |ctx| app.show(ctx, false));
             assert_eq!(app.state.index, index);
             assert_eq!(app.received, received);
             assert_eq!(
@@ -927,7 +947,7 @@ mod tests {
                 Some(slide_id()),
                 "A deck arrow must not move focus into the text editor"
             );
-            let _ = ctx.run(input(vec![event(false)]), |ctx| app.show(ctx));
+            let _ = ctx.run(input(vec![event(false)]), |ctx| app.show(ctx, false));
         }
         let _ = ctx.run(
             input(vec![egui::Event::Key {
@@ -937,7 +957,7 @@ mod tests {
                 repeat: false,
                 modifiers: egui::Modifiers::NONE,
             }]),
-            |ctx| app.show(ctx),
+            |ctx| app.show(ctx, false),
         );
         assert_ne!(
             ctx.memory(|memory| memory.focused()),
@@ -945,7 +965,7 @@ mod tests {
             "Tab must still reach other controls"
         );
         ctx.memory_mut(|memory| memory.request_focus(text_id()));
-        let _ = ctx.run(input(Vec::new()), |ctx| app.show(ctx));
+        let _ = ctx.run(input(Vec::new()), |ctx| app.show(ctx, false));
         let _ = ctx.run(
             input(vec![egui::Event::Key {
                 key: Key::ArrowRight,
@@ -954,7 +974,7 @@ mod tests {
                 repeat: false,
                 modifiers: egui::Modifiers::NONE,
             }]),
-            |ctx| app.show(ctx),
+            |ctx| app.show(ctx, false),
         );
         assert_eq!(app.state.index, 1);
         assert_eq!(app.received, 3);
@@ -1012,6 +1032,10 @@ mod tests {
                         .unwrap_or_else(|| panic!("Missing text {label}"))
                 };
                 assert!(
+                    bounds(&(index + 1).to_string()).bottom() < bounds(slide.0).top(),
+                    "Slide number overlaps the heading at {width}"
+                );
+                assert!(
                     bounds(slide.2).bottom() < bounds("Ready for navigation").top() - 8.0,
                     "Hint overlaps footer at {width}"
                 );
@@ -1040,7 +1064,7 @@ mod tests {
                 }],
                 ..Default::default()
             },
-            |ctx| app.show(ctx),
+            |ctx| app.show(ctx, false),
         );
         assert_eq!(app.state.mode, Mode::Ended);
         assert!(output
@@ -1097,7 +1121,7 @@ mod tests {
             events,
             ..Default::default()
         };
-        let output = ctx.run(input(Vec::new()), |ctx| app.show(ctx));
+        let output = ctx.run(input(Vec::new()), |ctx| app.show(ctx, false));
         assert_eq!(ctx.memory(|m| m.focused()), Some(slide_id()));
         let tree = output.platform_output.accesskit_update.unwrap();
         let next = tree
@@ -1130,12 +1154,12 @@ mod tests {
         };
         let _ = ctx.run(
             input(vec![event(egui::accesskit::Action::Click, next.0)]),
-            |ctx| app.show(ctx),
+            |ctx| app.show(ctx, false),
         );
         assert_eq!(app.state.index, 1, "UIA Invoke must activate Next");
         let _ = ctx.run(
             input(vec![event(egui::accesskit::Action::Focus, text.0)]),
-            |ctx| app.show(ctx),
+            |ctx| app.show(ctx, false),
         );
         assert_eq!(ctx.memory(|m| m.focused()), Some(text_id()));
         key_frame(&mut app, &ctx, Key::ArrowRight, Some(text_id()));
