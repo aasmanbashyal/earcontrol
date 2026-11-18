@@ -1,0 +1,31 @@
+name: macOS checks and package
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
+      - name: Format and lint
+        run: ./scripts/macos.sh Check
+      - name: Test
+        run: ./scripts/macos.sh Test
+      - name: Package
+        run: ./scripts/macos.sh Package --universal
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EarControl-macos-universal
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/*-SHA256SUMS.txt
+          if-no-files-found: error

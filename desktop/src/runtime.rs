@@ -249,7 +249,10 @@ impl AppState {
                 &trigger,
                 &source,
                 "skipped",
-                "Release Ctrl, Alt, Shift, and Windows first.",
+                crate::platform_text(
+                    "Release Ctrl, Alt, Shift, and Windows first.",
+                    "Release Control, Option, Shift, and Command first.",
+                ),
                 session.generation,
             );
             return;
@@ -411,8 +414,10 @@ impl AppState {
         match native::NativeInput::new(hwnd, callback, predicate, health_changed) {
             Ok(input) => *self.native.lock().unwrap() = Some(input),
             Err(error) => {
-                *self.warning.lock().unwrap() =
-                    Some(format!("Windows media controls unavailable: {error}"))
+                *self.warning.lock().unwrap() = Some(format!(
+                    "{} media controls unavailable: {error}",
+                    crate::platform_text("Windows", "macOS")
+                ))
             }
         }
     }
@@ -513,7 +518,12 @@ impl AppState {
             .lock()
             .unwrap()
             .as_ref()
-            .ok_or_else(|| "Windows media controls are unavailable. Restart EarControl.".to_owned())
+            .ok_or_else(|| {
+                format!(
+                    "{} media controls are unavailable. Restart EarControl.",
+                    crate::platform_text("Windows", "macOS")
+                )
+            })
             .and_then(|input| input.start(settings.keyboard_fallback));
         if let Err(error) = started {
             let _ = self.stop();

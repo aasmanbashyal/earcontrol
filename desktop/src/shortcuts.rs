@@ -38,9 +38,10 @@ fn parse_chord(text: &str) -> Result<([u16; 5], usize), String> {
     for (index, upper) in uppercase.split('+').map(str::trim).enumerate() {
         let modifier = match upper {
             "CTRL" | "CONTROL" => Some((1, "Ctrl")),
-            "ALT" => Some((2, "Alt")),
+            // macOS names share the same bits: Option is Alt and Command is Win.
+            "ALT" | "OPTION" | "OPT" => Some((2, "Alt")),
             "SHIFT" => Some((4, "Shift")),
-            "WIN" | "WINDOWS" | "META" => Some((8, "Win")),
+            "WIN" | "WINDOWS" | "META" | "CMD" | "COMMAND" => Some((8, "Win")),
             _ => None,
         };
         if let Some((bit, name)) = modifier {
@@ -114,6 +115,18 @@ fn main_virtual_key(key: &str) -> Option<u16> {
 #[cfg(test)]
 mod tests {
     use super::parse_shortcut;
+
+    #[test]
+    fn accepts_mac_modifier_names_as_the_same_keys() {
+        assert_eq!(
+            parse_shortcut("Cmd+Option+Right").unwrap(),
+            parse_shortcut("Win+Alt+Right").unwrap()
+        );
+        assert_eq!(
+            parse_shortcut("command+opt+shift+K").unwrap(),
+            vec![0x12, 0x10, 0x5B, 0x4B]
+        );
+    }
 
     #[test]
     fn parses_chords_case_insensitively_in_consistent_press_order() {

@@ -47,7 +47,13 @@ const VIEWS: [(View, &str, &str); 5] = [
 ];
 fn capture_message(health: &native::CaptureHealth) -> (&'static str, bool) {
     if !health.input_thread_alive {
-        return ("Windows input stopped. Restart EarControl.", true);
+        return (
+            crate::platform_text(
+                "Windows input stopped. Restart EarControl.",
+                "macOS input stopped. Restart EarControl.",
+            ),
+            true,
+        );
     }
     if health.media_commands > 0 {
         return ("Media commands received in this session.", false);
@@ -57,10 +63,10 @@ fn capture_message(health: &native::CaptureHealth) -> (&'static str, bool) {
     }
     match health.route {
         native::CaptureRoute::Checking => {
-            ("Checking which app Windows sends media buttons to…", false)
+            (crate::platform_text("Checking which app Windows sends media buttons to…", "Checking media input…"), false)
         }
         native::CaptureRoute::EarControl => {
-            ("Windows selects EarControl. Try an earbud gesture.", false)
+            (crate::platform_text("Windows selects EarControl. Try an earbud gesture.", "EarControl is the Now Playing app. Try an earbud gesture."), false)
         }
         native::CaptureRoute::OtherApp => (
             "Windows selected another media app. If buttons don't respond, pause it and retry.",
@@ -71,7 +77,10 @@ fn capture_message(health: &native::CaptureHealth) -> (&'static str, bool) {
             false,
         ),
         native::CaptureRoute::Unavailable => (
-            "Windows media routing is unknown. Retry input if buttons don't respond.",
+            crate::platform_text(
+                "Windows media routing is unknown. Retry input if buttons don't respond.",
+                "EarControl is listed as Now Playing. If buttons don't respond, pause other media apps and retry input.",
+            ),
             false,
         ),
     }
@@ -142,10 +151,14 @@ impl EarControl {
         let runtime = AppState::new(window::settings_path()?, move || {
             ctx.request_repaint_of(egui::ViewportId::ROOT)
         });
-        let RawWindowHandle::Win32(handle) = cc.window_handle()?.as_raw() else {
-            return Err("EarControl requires Windows.".into());
+        let handle = match cc.window_handle()?.as_raw() {
+            #[cfg(windows)]
+            RawWindowHandle::Win32(handle) => handle.hwnd.get(),
+            #[cfg(target_os = "macos")]
+            RawWindowHandle::AppKit(handle) => handle.ns_view.as_ptr() as isize,
+            _ => return Err("EarControl requires Windows or macOS.".into()),
         };
-        runtime.initialize(handle.hwnd.get());
+        runtime.initialize(handle);
         let mut app = Self::from_runtime(runtime);
         app.refresh_windows();
         app.refresh_devices(&cc.egui_ctx);
@@ -1029,7 +1042,7 @@ impl EarControl {
                 id,
                 egui::ViewportBuilder::default()
                     .with_title("EarControl practice deck")
-                    .with_decorations(false)
+                    .with_decorations(cfg!(target_os = "macos"))
                     .with_visible(self.practice.visible())
                     .with_inner_size([960.0, 640.0])
                     .with_min_inner_size([600.0, 400.0]),
@@ -1284,7 +1297,7 @@ impl EarControl {
                                 ui.spacing_mut().item_spacing.y = 4.0;
                                 ui.label(design::strong(
                                     if active && received {
-                                        "Windows input received"
+                                        crate::platform_text("Windows input received", "macOS input received")
                                     } else if monitoring {
                                         "No command received in this session yet"
                                     } else {
@@ -1313,17 +1326,18 @@ impl EarControl {
                     ui.add_space(4.0);
                     ui.collapsing(design::text("Input details", 11.0).color(p.muted), |ui| {
                         ui.label(design::text(format!(
-                            "Windows media reports: {} · Media-key reports: {}",
+                            "{} media reports: {} · Media-key reports: {}",
+                            crate::platform_text("Windows", "Now Playing"),
                             health.media_commands, health.keyboard_commands,
                         ), 11.0).color(p.muted));
                         ui.label(design::text(
                             if health.keyboard_fallback {
-                                "Keyboard media-key backup is on. Earbud gestures can use a different Windows path."
+                                crate::platform_text("Keyboard media-key backup is on. Earbud gestures can use a different Windows path.", "Keyboard media-key backup is on. Earbud gestures use Now Playing instead.")
                             } else {
                                 "Keyboard media-key backup is off. Enable it in Settings if your device sends keyboard media keys."
                             }, 11.0,
                         ).color(p.muted));
-                        ui.label(design::text("Windows chooses the media session. If another app stays selected, pause it and select EarControl in Windows media controls.", 11.0).color(p.muted));
+                        ui.label(design::text(crate::platform_text("Windows chooses the media session. If another app stays selected, pause it and select EarControl in Windows media controls.", "macOS sends media buttons to the Now Playing app. If another app keeps playing, pause it and retry input."), 11.0).color(p.muted));
                     });
                 }
             });
@@ -1336,7 +1350,7 @@ impl EarControl {
             ui.label(design::text("3. Choose a target window, start control, then switch to that window.", 12.0).color(p.muted));
             ui.label(
                 design::text(
-                    "Windows reports media commands, not tap counts or the earbud side. Browser shortcuts go to the focused tab or field.",
+                    crate::platform_text("Windows reports media commands, not tap counts or the earbud side. Browser shortcuts go to the focused tab or field.", "macOS reports media commands, not tap counts or the earbud side. Browser shortcuts go to the focused tab or field."),
                     12.0,
                 )
                 .color(p.muted),
@@ -1784,7 +1798,7 @@ impl EarControl {
                         } else {
                             "No Bluetooth audio devices found"
                         },
-                        "Pair your headphones in Windows Bluetooth settings, then refresh this list.",
+                        crate::platform_text("Pair your headphones in Windows Bluetooth settings, then refresh this list.", "Pair your headphones in macOS Bluetooth settings, then refresh this list."),
                     );
                 }
                 for device in &self.devices {
@@ -1813,7 +1827,7 @@ impl EarControl {
                 egui::Frame::new().fill(p.soft).inner_margin(egui::Margin::symmetric(20, 12)).show(ui, |ui| {
                     ui.set_min_width(ui.available_width());
                     ui.horizontal_wrapped(|ui| {
-                        ui.label(design::text("Windows manages pairing and connections.", 11.0).color(p.muted));
+                        ui.label(design::text(crate::platform_text("Windows manages pairing and connections.", "macOS manages pairing and connections."), 11.0).color(p.muted));
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                             if ui.link(design::text("Bluetooth settings  ↗", 12.0)).clicked() {
                                 self.report(native::open_bluetooth_settings());
@@ -1824,10 +1838,10 @@ impl EarControl {
             });
         ui.add_space(20.0);
         ui.label(design::strong("Using more than one device", 16.0));
-        ui.label(design::text("All devices share the active profile. Windows media events do not identify the source device, so EarControl cannot assign a separate profile to each headset.",12.0).color(p.muted));
+        ui.label(design::text(crate::platform_text("All devices share the active profile. Windows media events do not identify the source device, so EarControl cannot assign a separate profile to each headset.", "All devices share the active profile. macOS media events do not identify the source device, so EarControl cannot assign a separate profile to each headset."),12.0).color(p.muted));
         ui.add_space(10.0);
         ui.label(design::strong("Buttons not appearing?", 16.0));
-        ui.label(design::text("Start Monitor and try a button. Pause other media apps and select EarControl in Windows media controls. Some Bluetooth LE devices may be absent from this list even when their commands work.",12.0).color(p.muted));
+        ui.label(design::text(crate::platform_text("Start Monitor and try a button. Pause other media apps and select EarControl in Windows media controls. Some Bluetooth LE devices may be absent from this list even when their commands work.", "Start Monitor and try a button. Pause other media apps so EarControl stays Now Playing. Some Bluetooth LE devices may be absent from this list even when their commands work."),12.0).color(p.muted));
         if design::button(ui, "Start monitor", Some(Icon::Radio), false).clicked() {
             self.mode("monitor");
         }
@@ -2084,7 +2098,10 @@ impl EarControl {
             });
             ui.label(
                 design::text(
-                    "Duplicate Windows reports are still filtered when repeat delay is off.",
+                    crate::platform_text(
+                        "Duplicate Windows reports are still filtered when repeat delay is off.",
+                        "Duplicate macOS reports are still filtered when repeat delay is off.",
+                    ),
                     11.0,
                 )
                 .color(p.muted),
@@ -2122,7 +2139,16 @@ impl EarControl {
                         .color(p.muted),
                 );
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label(design::text("Windows · Local profiles", 11.0).color(p.muted));
+                    ui.label(
+                        design::text(
+                            crate::platform_text(
+                                "Windows · Local profiles",
+                                "macOS · Local profiles",
+                            ),
+                            11.0,
+                        )
+                        .color(p.muted),
+                    );
                 });
             });
         });
@@ -2715,14 +2741,19 @@ pub fn recorded_shortcut(key: egui::Key, modifiers: egui::Modifiers, win: bool) 
     if modifiers.ctrl {
         parts.push("Ctrl");
     }
+    let (alt, win_name) = if cfg!(target_os = "macos") {
+        ("Option", "Cmd")
+    } else {
+        ("Alt", "Win")
+    };
     if modifiers.alt {
-        parts.push("Alt");
+        parts.push(alt);
     }
     if modifiers.shift {
         parts.push("Shift");
     }
     if win {
-        parts.push("Win");
+        parts.push(win_name);
     }
     let key = match key {
         egui::Key::ArrowRight => "Right",
@@ -2895,6 +2926,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)]
     fn steady_frames_skip_draft_copy_but_uia_edits_cancel_pending_macro() {
         use std::time::Instant;
         use windows::{
@@ -3467,7 +3499,7 @@ mod tests {
         assert!(
             app.notice
                 .as_ref()
-                .is_some_and(|message| message.contains("Windows media controls are unavailable")),
+                .is_some_and(|message| message.contains("media controls are unavailable")),
             "The header drag region must not swallow the Monitor click"
         );
     }
@@ -3534,7 +3566,23 @@ mod tests {
         );
         assert_eq!(
             recorded_shortcut(egui::Key::Escape, egui::Modifiers::NONE, true),
-            Some("Win+Escape".into())
+            Some(
+                if cfg!(target_os = "macos") {
+                    "Cmd+Escape"
+                } else {
+                    "Win+Escape"
+                }
+                .into()
+            )
+        );
+        let option = if cfg!(target_os = "macos") {
+            "Option"
+        } else {
+            "Alt"
+        };
+        assert_eq!(
+            recorded_shortcut(egui::Key::K, egui::Modifiers::ALT, false),
+            Some(format!("{option}+K"))
         );
     }
     #[test]

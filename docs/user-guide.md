@@ -57,4 +57,15 @@ Events do not identify the headphone, earbud side, or tap count. Connected devic
 
 If headphones expose only play/pause and next-track, map next-track to Left for both directions. The app cannot create a gesture the device does not send. Physical compatibility depends on the headphones and Windows driver.
 
+## macOS
+
+EarControl runs on macOS 11 or later, on Apple silicon and Intel. Pair headphones in **System Settings › Bluetooth**; the Devices screen lists paired Bluetooth audio devices.
+
+- **Accessibility access is required to send shortcuts and text.** The first time a macro runs, or when you turn on keyboard media-key capture, macOS asks you to allow EarControl in **System Settings › Privacy & Security › Accessibility**. Turn it on, then choose **Retry input**.
+- **Headphone buttons reach EarControl through Now Playing.** While Monitor or control runs, EarControl registers as the Now Playing app without playing audio. macOS sends headphone commands to the most recent Now Playing app, so pause other players if Monitor stays empty. macOS does not report which app it chose, so the status line cannot confirm routing.
+- **Keyboard media keys** (F7–F9 and the play key on Apple keyboards) use an event tap that needs the same Accessibility access.
+- Shortcuts can use **Cmd** and **Option**. They are stored as Win and Alt, so profiles move between Windows and macOS unchanged. Recording a shortcut on macOS writes Cmd and Option.
+- Target windows are listed by app name. Window titles also appear if you allow **Screen Recording** for EarControl, but it isn't required.
+- Profiles are stored in `~/Library/Application Support/app.earcontrol.desktop/profiles.json`.
+
 Keep EarControl and the target at normal user permissions. Windows blocks input to higher-integrity applications. Release Ctrl, Alt, Shift, and Windows before running macros. The hook ignores injected events and observes only supported media keys.

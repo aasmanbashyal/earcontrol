@@ -22,6 +22,10 @@ From the repository root:
 
 `./scripts/verify-release.ps1` checks the version and release checksums. Use `-PortableOnly` after `Build`. `scripts/benchmark.ps1` measures release process trees against a supplied baseline. The optional root Bun commands route to these same scripts; Bun is only needed for editing the historical launch video.
 
+### macOS
+
+macOS development needs macOS 11 or later, the Xcode command line tools and stable Rust. `./scripts/macos.sh` takes the same task names: `Setup`, `Check`, `Test`, `Dev`, `Build` and `Package`. `Package` writes `dist/EarControl.app`, a DMG, a ZIP and a SHA-256 manifest; add `--universal` to build for Apple silicon and Intel. The app is signed ad hoc unless `CODESIGN_IDENTITY` names a Developer ID Application identity, which also enables the hardened runtime. Notarize the DMG before publishing it. Sending shortcuts and testing media keys needs Accessibility access for EarControl, or for your terminal when you use `Dev`.
+
 The script recognizes an optional local Rust toolchain under `.tools/`. For NSIS, use an installed copy, set `NSIS_HOME`, or place it in `.tools/nsis`. Cargo's lockfile is at the repository root. Update the application version in `desktop/Cargo.toml` and regenerate the lockfile with Cargo.
 
 The committed `.cargo/config.toml` selects the static C runtime for Windows x64. Local and CI builds use that same setting. Do not override it with `RUSTFLAGS` when packaging. Release verification rejects executable imports of Visual C++ runtime DLLs. `Test` also runs the standalone PowerShell checks in `scripts/test-release-verification.ps1`.

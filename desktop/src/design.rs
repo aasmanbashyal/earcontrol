@@ -605,6 +605,9 @@ pub fn toggle(ui: &mut Ui, value: &mut bool, label: &str) -> Response {
     response
 }
 pub fn window_controls(ui: &mut Ui, rect: Rect) {
+    if cfg!(target_os = "macos") {
+        return;
+    }
     let ctx = ui.ctx().clone();
     for (index, icon, label) in [
         (0, Icon::Minimize, "Minimize window"),
@@ -774,6 +777,8 @@ struct SystemFont {
     name: &'static str,
     primary_family: Option<FontFamily>,
     bytes: FontBytes,
+    // Face index inside a font collection (.ttc).
+    index: u32,
 }
 
 fn load_font_bytes(path: &std::path::Path) -> Option<FontBytes> {
@@ -809,27 +814,68 @@ fn load_font_bytes(path: &std::path::Path) -> Option<FontBytes> {
     }
 }
 
-fn read_system_fonts(directory: &std::path::Path) -> Vec<SystemFont> {
-    let mut fonts = Vec::new();
-    for (name, candidates, primary_family) in [
+#[cfg(not(target_os = "macos"))]
+fn system_font_candidates() -> [(
+    &'static str,
+    &'static [&'static str],
+    Option<FontFamily>,
+    u32,
+); 5] {
+    [
         (
             "Segoe",
             &["segoeui.ttf"][..],
             Some(FontFamily::Proportional),
+            0,
         ),
         (
             "Segoe Semibold",
             &["seguisb.ttf"][..],
             Some(FontFamily::Name("semibold".into())),
+            0,
         ),
         (
             "Consolas",
             &["consola.ttf"][..],
             Some(FontFamily::Monospace),
+            0,
         ),
-        ("Nirmala UI", &["Nirmala.ttf", "Nirmala.ttc"][..], None),
-        ("Segoe UI Emoji", &["seguiemj.ttf"][..], None),
-    ] {
+        ("Nirmala UI", &["Nirmala.ttf", "Nirmala.ttc"][..], None, 0),
+        ("Segoe UI Emoji", &["seguiemj.ttf"][..], None, 0),
+    ]
+}
+
+/// macOS system faces with the same roles. Indexes select faces inside the
+/// collections: Helvetica Neue Regular (0) and Medium (10), Menlo Regular (0),
+/// and Kohinoor Devanagari Regular (0) for Nepali text.
+#[cfg(target_os = "macos")]
+fn system_font_candidates() -> [(
+    &'static str,
+    &'static [&'static str],
+    Option<FontFamily>,
+    u32,
+); 4] {
+    [
+        (
+            "Helvetica Neue",
+            &["HelveticaNeue.ttc"][..],
+            Some(FontFamily::Proportional),
+            0,
+        ),
+        (
+            "Helvetica Neue Medium",
+            &["HelveticaNeue.ttc"][..],
+            Some(FontFamily::Name("semibold".into())),
+            10,
+        ),
+        ("Menlo", &["Menlo.ttc"][..], Some(FontFamily::Monospace), 0),
+        ("Kohinoor Devanagari", &["Kohinoor.ttc"][..], None, 0),
+    ]
+}
+
+fn read_system_fonts(directory: &std::path::Path) -> Vec<SystemFont> {
+    let mut fonts = Vec::new();
+    for (name, candidates, primary_family, index) in system_font_candidates() {
         if let Some(bytes) = candidates
             .iter()
             .find_map(|file| load_font_bytes(&directory.join(file)))
@@ -838,6 +884,7 @@ fn read_system_fonts(directory: &std::path::Path) -> Vec<SystemFont> {
                 name,
                 primary_family,
                 bytes,
+                index,
             });
         }
     }
@@ -847,6 +894,9 @@ fn read_system_fonts(directory: &std::path::Path) -> Vec<SystemFont> {
 fn system_fonts() -> &'static [SystemFont] {
     static FONTS: OnceLock<Vec<SystemFont>> = OnceLock::new();
     FONTS.get_or_init(|| {
+        if cfg!(target_os = "macos") {
+            return read_system_fonts(std::path::Path::new("/System/Library/Fonts"));
+        }
         std::env::var_os("WINDIR")
             .map(|windir| read_system_fonts(&std::path::Path::new(&windir).join("Fonts")))
             .unwrap_or_default()
@@ -857,7 +907,10 @@ fn add_windows_fonts(fonts: &mut egui::FontDefinitions, sources: &'static [Syste
     for source in sources {
         fonts.font_data.insert(
             source.name.into(),
-            Arc::new(egui::FontData::from_static(source.bytes.as_slice())),
+            Arc::new(egui::FontData {
+                index: source.index,
+                ..egui::FontData::from_static(source.bytes.as_slice())
+            }),
         );
         if let Some(family) = &source.primary_family {
             fonts
@@ -883,6 +936,9 @@ fn add_windows_fonts(fonts: &mut egui::FontDefinitions, sources: &'static [Syste
 
 /// Borderless windows still expose the same edge resizing as standard Windows chrome.
 pub fn resize_edges(ctx: &egui::Context) {
+    if cfg!(target_os = "macos") {
+        return;
+    }
     if ctx.input(|i| i.viewport().maximized.unwrap_or(false)) {
         return;
     }
