@@ -14,14 +14,16 @@ name = "earcontrol_lib"
 winresource = "0.1"
 
 [dependencies]
-accesskit_windows = "=0.29.2"
 eframe = { version = "=0.33.3", default-features = false, features = ["glow", "accesskit"] }
-memmap2 = "=0.9.12"
 raw-window-handle = "0.6"
 rfd = { version = "0.15", default-features = false }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tempfile = "3"
+
+[target.'cfg(windows)'.dependencies]
+accesskit_windows = "=0.29.2"
+memmap2 = "=0.9.12"
 windows = { version = "0.62", features = [
   "Foundation", "Media", "Media_Control", "Win32_Security",
   "Win32_Foundation", "Win32_Devices_Bluetooth", "Win32_System_LibraryLoader",
@@ -29,7 +31,15 @@ windows = { version = "0.62", features = [
   "Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse", "Win32_Graphics_Gdi"
 ] }
 
-[dev-dependencies]
+[target.'cfg(target_os = "macos")'.dependencies]
+block2 = "0.6"
+dispatch2 = "0.3"
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "libc", "NSRunningApplication", "NSWorkspace"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSArray", "NSDictionary", "NSEnumerator", "NSObject", "NSString", "NSValue"] }
+objc2-media-player = { version = "0.3", default-features = false, features = ["std", "block2", "MPNowPlayingInfoCenter", "MPRemoteCommand", "MPRemoteCommandCenter", "MPRemoteCommandEvent", "MPMediaItem"] }
+
+[target.'cfg(windows)'.dev-dependencies]
 windows = { version = "0.62", features = ["Foundation_Collections", "Media_Control"] }
 
 [[bench]]

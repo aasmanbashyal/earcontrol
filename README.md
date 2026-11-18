@@ -1,6 +1,6 @@
 # EarControl
 
-Map headphone media commands to Windows shortcuts and macros.
+Map headphone media commands to Windows and macOS shortcuts and macros.
 
 <picture>
   <source media="(prefers-reduced-motion: reduce)" srcset="docs/media/earcontrol-native-poster.jpg">
@@ -19,6 +19,8 @@ Download the Windows installer or portable ZIP from [GitHub Releases](https://gi
 
 - Run the `x64-setup.exe` installer for a per-user installation.
 - Extract the `win-x64.zip` portable download and open `EarControl.exe`.
+
+On macOS 11 or later, open the `macos-universal.dmg` download (or build it with `./scripts/macos.sh Package --universal`) and drag **EarControl** to Applications. macOS asks for Accessibility access the first time EarControl sends a shortcut. See [macOS](docs/user-guide.md#macos) in the user guide.
 
 If you installed 2.x, uninstall it first with **Delete app data** unchecked. Then install 3.0 to use your existing profiles.
 
@@ -61,7 +63,9 @@ Install the prerequisites in [CONTRIBUTING.md](CONTRIBUTING.md), then run from t
 ./scripts/verify-release.ps1
 ```
 
-The app and both windows are written in Rust using egui/eframe. Windows automation lives in `scripts/windows.ps1`; the optional root Bun commands call the same script. [Architecture](docs/architecture.md) explains the source boundaries. [Releasing](docs/releasing.md) explains version checks, draft releases, and distribution checks.
+On macOS, run `./scripts/macos.sh Check`, `Test`, `Dev`, or `Package` instead. `Package --universal` builds a universal app, DMG, and ZIP in `dist`.
+
+The app and both windows are written in Rust using egui/eframe. Windows automation lives in `scripts/windows.ps1`, macOS automation in `scripts/macos.sh`; the optional root Bun commands call the same script. [Architecture](docs/architecture.md) explains the source boundaries. [Releasing](docs/releasing.md) explains version checks, draft releases, and distribution checks.
 
 See the [changelog](CHANGELOG.md) for changes.
 
